@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/res">
+        <file>cubelogo.png</file>
+        <file>diafragm.png</file>
+    </qresource>
+</RCC>
