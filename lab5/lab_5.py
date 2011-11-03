@@ -49,69 +49,6 @@ class Tridiagonal_Matrix:
 			
 		return x
 
-## Description: find coefficients of first equation
-def first_eq(pde):
-	alpha = pde['init'][0]
-	beta  = pde['init'][1]
-	phi1   = pde['init'][2]
-	a = pde['u_xx']
-	b = pde['u_x']
-	c = pde['u']
-	u = pde['grid']
-	
-	#TODO elem of dict can be None, not zero
-	if abs(alpha) < eps:
-		a0 = 0
-		b0 = -beta * (2*a*a - b*h)
-		c0 = 0
-		d0 = -phi(tau*(k+1)) * (2*a*a - b*h)
-	else:
-		a0 = 0
-		b0 = 2*a*a/h + h/tau - c*h + beta * (2*a*a - b*h)
-		c0 = 2*a*a/h
-		d0 = u[0][k] * h/tau - phi1(tau*(k+1)) * (2*a*a - b*h)
-	return (a0, b0, c0, d0)
-	
-## Description: find coefficients of last equation
-def last_eq(pde):
-	alpha = pde['init1'][0]
-	beta  = pde['init1'][1]
-	phi1  = pde['init1'][2]
-	a = pde['u_xx']
-	b = pde['u_x']
-	c = pde['u']
-	u = pde['grid']
-
-	if abs(pde['alpha']) < eps:
-		an = 0
-		bn = beta * (2*a*a + b*h)
-		cn = 0
-		dn = phi2(tau*(k+1)) * (2*a*a + b*h)
-	else:
-		an = -2*a*a/h
-		bn = 2*a*a/h + h/tau - c*h + beta * (2*a*a + b*h)
-		cn = 0
-		dn = u[N][k] * h/tau + phi2(tau*(k+1)) * (2*a*a + b*h)
-	return (an, bn, cn, dn)
-
-## Description: find coefficients of last equation
-def midle_eq(pde):
-	a = pde['u_xx']
-	b = pde['u_x']
-	c = pde['u']
-	u = pde['grid']
-	
-	sigma = a*a * tau / (h*h)
-	omega = b * tau / (2*h)
-	eta   = c*tau #TODO add f(x,t) here
-	
-	ai = sigma - 3*omega
-	bi = 1 - 2*sigma + 4*omega + eta
-	ci = sigma - omega
-	di = -u[N][k]
-
-	return (ai, bi, ci, di)
-
 
 
 start_f = lambda x: sin(x)
