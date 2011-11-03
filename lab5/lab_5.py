@@ -76,7 +76,7 @@ def first_eq(pde):
 def last_eq(pde):
 	alpha = pde['init1'][0]
 	beta  = pde['init1'][1]
-	phi1   = pde['init1'][2]
+	phi1  = pde['init1'][2]
 	a = pde['u_xx']
 	b = pde['u_x']
 	c = pde['u']
@@ -112,56 +112,7 @@ def midle_eq(pde):
 
 	return (ai, bi, ci, di)
 
-## Description: solve equation
-def explicit_method( u, step): #TODO add threads
-	N = len(u)
-	sigma = tau * alpha**2 / h**2
-	omega = tau * b / (2*h)
-	eta = c * tau
-	(a0, b0, c0, d0) = first_eq(pde)
-	(an, bn, cn, dn) = last_eq(pde)
-	
-	res = [0] + [sigma*(u[i-1] - 2*u[i] + u[i+1]) +
-	             omega*(-3*u[i-1] + 4*u[i] - u[i+1]) +
-	             eta * u[i] for i in range(1, N-1)] + [0]
-	res[0] = (d0 - c0*res[1]) / b0
-	res[N-1] = (dn - bn*res[N-2]) / an
-	
-	return res
 
-## Description: solve with mathod 'Progonki'
-def implicit_method():
-	N = len(u)
-	sigma = tau * alpha**2 / h**2
-	omega = tau * b / (2*h)
-	eta = c * tau
-	(a0, b0, c0, d0) = first_eq(pde)
-	(ai, bi, ci, di) = midle_eq(pde)
-	(an, bn, cn, dn) = last_eq(pde)
-	
-	a = sigma
-	b = -(1+2*sigma)
-	c = sigma
-	d = -u[j]
-	
-	M = Tridiagonal_Matrix();
-	
-	M = zip( first_eq(pde) + midle_eq(pde) * N + last_eq(pde) )
-
-		
-	M.a = [ai] * N
-	M.b = [bi] * N
-	M.c = [ci] * N
-	M.d = [di] * N
-	M.n = N
-	
-	(M.a[0], M.b[0], M.c[0], M.d[0]) = first_eq(pde)
-	(M.a[N-1], M.b[N-1], M.c[N-1], M.d[N-1]) = last_eq(pde)
-
-	print_mat([M.a, M.b, M.c, M.d])
-
-	x = M.solve()
-	print_vec( [u0] + x + [u1])
 
 start_f = lambda x: sin(x)
 border1 = lambda x: 0
@@ -294,7 +245,7 @@ def parse_boundary_condition(s, b_cond = dict()):
 			try: beta = float(tmp[0])
 			except: beta = 1.0
 	try: result = (alpha, beta, eval("lambda t: " + right))
-	except: result = lambda t: 0.0
+	except: result = (alpha, beta, lambda t: 0.0)
 
 	if   ('(x,ly' in left):
 		b_cond['north'] = result
