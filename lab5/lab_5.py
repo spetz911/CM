@@ -6,7 +6,7 @@ from copy import copy, deepcopy
 from functools import reduce
 eps = 0.0001
 
-from PDE import *
+from pde import *
 
 def frange(x0, x1, d):
 	return [ x0 + d*k for k in range(int((x1-x0+eps/10)/d)+1)]
@@ -71,12 +71,12 @@ U2 = [u0]
 
 
 
-class parser():
-	def __init__(self)
+class PDE_parser():
+	def __init__(self):
 		pass
 	
 	## Description: for parsing one element of summ
-	@static
+	@staticmethod
 	def get_token(x):
 		tmp = x.split('*')
 		if tmp[-1] in ['u', 'u_xx', 'u_x', 'u_yy', 'u_y', 'u_tt', 'u_t']:
@@ -88,49 +88,47 @@ class parser():
 		else:
 			return None
 
-	def parse_pde(s):
+	def parse_pde(self, s):
 		"""For parsing partial differential equation"""
-		pde = PDE()
 		[left, right] = s.lower().rstrip().replace(' ','').split('=')
-		pde.type = None
+		self.type = None
 		if ('u_xx' in right) and ('u_t' in left):
-			pde.type = 'parabolic'
+			self.type = 'parabolic'
 		elif ('u_xx' in right) and ('u_tt' in left):
-			pde.type = 'hyperbolic'
+			self.type = 'hyperbolic'
 		elif ('u_xx' in right) and ('u_yy' in right):
-			pde.type = 'elliptic'
+			self.type = 'elliptic'
+
 		tokens = [ x for x in left.split('+') + right.split('+')]
 		rest = []
 		for x in tokens:
-			t = get_token(x)
+			t = PDE_parser.get_token(x)
 			if t:
-				pde.__setattr(t[0], t[1])
+				self.__setattr__(t[0], t[1])
 			else:
 				rest.append(x)
-		try: pde.fun = eval("lambda x,t: " + "+".join(rest))
-		except: pde.fun = lambda x,t: 0.0
-		return pde
+		try: self.fun = eval("lambda x,t: " + "+".join(rest))
+		except: self.fun = lambda x,t: 0.0
 
-	def parse_stuff(s, stuff = PDE()):
+	def parse_stuff(self, line):
 		"""For parsing other coefficients"""
-		[left, right] = s.lower().replace(' ','').split('=')
+		[left, right] = line.lower().replace(' ','').split('=')
 		if left in ['l', 'lx', 'ly', 't', 'w', 'eps']:
-			stuff.__setattr__(left, float(right))
+			self.__setattr__(left, float(right))
 
 	## Description: for solve init eq
-	def parse_initial_condition(s, i_cond = dict()):
-		[left, right] = s.lower().replace(' ','').split('=')
+	def parse_initial_condition(self, line):
+		[left, right] = line.lower().replace(' ','').split('=')
 		if left in ['u(x,0)', 'u(x,y,0)', 'u(x,y)']:
-			try: i_cond.  'init'] = eval("lambda x,y=0: " + right)
-			except: i_cond['init'] = lambda x,y=0: 0.0
+			try: self.init = eval("lambda x,y=0: " + right)
+			except: self.init = lambda x,y=0: 0.0
 		if left in ['u_t(x,0)', 'u_t(x,y,0)', 'u_t(x,y)']:
-			try: i_cond['init1'] = eval("lambda x,y=0: " + right)
-			except: i_cond['init1'] = lambda x,y=0: 0.0
-		return i_cond
+			try: self.init1 = eval("lambda x,y=0: " + right)
+			except: self.init1 = lambda x,y=0: 0.0
 
 	## Description: for solve limit eq
-	def parse_boundary_condition(s, b_cond = dict()):
-		[left, right] = s.lower().replace(' ','').split('=')
+	def parse_boundary_condition(self, line):
+		[left, right] = line.lower().replace(' ','').split('=')
 		#! alpha*u_x + beta*u = f(t)
 		alpha = 0.0
 		beta = 0.0
@@ -147,27 +145,18 @@ class parser():
 		except: result = (alpha, beta, lambda t: 0.0)
 
 		if   ('(x,ly' in left):
-			b_cond['north'] = result
+			self.north = result
 		elif ('(0,x' in left):
-			b_cond['south'] = result
+			self.south = result
 		elif ('(l' in left): # (lx,y,0)
-			b_cond['east'] = result
+			self.east = result
 		elif ('(0' in left): # (0,y,0)
-			b_cond['west'] = result
+			self.west = result
 		
-		try: b_cond['left'] = b_cond['west']
+		try: self.left = self.west
 		except: pass
-		try: b_cond['right'] = b_cond['east']
+		try: self.right = self.east
 		except: pass
-		return b_cond
-
-
-
-def main2():
-
-	for (step,t) in enumerate(frange(0, T, tau)):
-		U1.append( implicid_method(U[-1], step))
-		U2.append( explicid_method(U[-1], step))
 
 
 
@@ -180,12 +169,13 @@ s = "15*u_t = 0.1*u_xx + 0.2*u_x + -3.0*u + x*t"
 ## Description: parse all input
 def parse_all(s):
 	print("s:", s)
-	pde = parse_pde(s)
+	pde = PDE_parser()
+	pde.parse_pde(s)
 	print("pde =")
-	print(pde)
+	print(pde.type)
 	if pde.type == 'parabolic':
 		print("f(1,1) =", pde.fun(1,1))
-		Parabolic_PDE eq(pde)
+		eq = PDE_parser()
 		
 		
 	elif pde.type == 'hyperbolic':
@@ -194,13 +184,7 @@ def parse_all(s):
 		pass
 	
 	
-	
-
-
-
-
-
-
+	return None
 
 
 

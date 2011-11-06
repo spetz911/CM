@@ -1,16 +1,6 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-interface PDE_Interface:
-	def __init__():
-		"TODO description"
-	def first_eq(u):
-		"TODO description"
-	def middle_eq(u):
-		"TODO description"
-	def last_eq(u):
-		"TODO description"
-	
 
 class PDE:
 	def scalar(v1, v2):
@@ -61,7 +51,7 @@ class PDE:
 
 	## Description: solve with method 'Progonki'
 	def Crank_Nicolson_method():
-	
+		pass
 		# a_i /= Q 
 		# b_i /= Q 
 		# c_i /= Q 
@@ -72,7 +62,7 @@ class PDE:
 
 
 
-class Parabolic_PDE(pde) implements PDE_Interface:
+class Parabolic_PDE(PDE):
 	def __init__(pde = dict()):
 		pde.__init__(pde)
 		
@@ -125,7 +115,7 @@ class Parabolic_PDE(pde) implements PDE_Interface:
 
 		return (ai, bi, ci, di)
 
-class Hyperbolic_PDE(pde) implements PDE_Interface:
+class Hyperbolic_PDE(PDE):
 	def __init__():
 		pde.__init__()
 		pass
@@ -162,7 +152,7 @@ def main():
 
 	s = open("input").readline()
 	
-	print(parse_all(s))
+#	print(parse_all(s))
 
 
 #=====================================================================
