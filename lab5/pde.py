@@ -1,13 +1,18 @@
-#! /usr/bin/python3.1
+#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-
-
-
-class pde:
+interface PDE_Interface:
 	def __init__():
-		pass
+		"TODO description"
+	def first_eq(u):
+		"TODO description"
+	def middle_eq(u):
+		"TODO description"
+	def last_eq(u):
+		"TODO description"
+	
 
+class PDE:
 	def scalar(v1, v2):
 		return sum(x1*x2 for (x1,x2) in zip(v1,v2))
 	
@@ -18,10 +23,11 @@ class pde:
 		return mat_vec(zip(*m), v)
 	
 	## Description: solve equation
-	def explicit_method(u): #TODO add threads
+	def explicit_method(u, u_k_1 = 0): #TODO add threads
 		sigma = tau * alpha**2 / h**2
 		omega = tau * b / (2*h)
 		eta = c * tau
+		# move it to inheritance class
 		coef_a = [+1, -2, +1]
 		coef_b = [-3, +4, -1]
 		coef_c = [+0, +1, +0]
@@ -43,67 +49,70 @@ class pde:
 	
 		M = Tridiagonal_Matrix();
 	
-		M = zip(* first_eq(pde) + midle_eq(pde) * (N-2) + last_eq(pde) )
+		M = zip(* first_eq(pde) + middle_eq(pde) * (N-2) + last_eq(pde) )
 	
-		# a_i /= Q 
-		# b_i /= Q 
-		# c_i /= Q 
-		# d_i += explicit_method * (1-Q) 
-	
+
 		M.n = N
 	
 		print_mat([M.a, M.b, M.c, M.d])
 
 		x = M.solve()
 		print_vec( [u0] + x + [u1])
+
+	## Description: solve with method 'Progonki'
+	def Crank_Nicolson_method():
 	
+		# a_i /= Q 
+		# b_i /= Q 
+		# c_i /= Q 
+		# d_i += explicit_method * (1-Q) 
 	
 
 
 
 
 
-class parabolic_pde(pde):
-	def __init__():
-		pde.__init__()
-		pass
+class Parabolic_PDE(pde) implements PDE_Interface:
+	def __init__(pde = dict()):
+		pde.__init__(pde)
+		
 	
-	## Description: find coefficients of first equation
 	def first_eq(pde):
-		alpha = pde['init'][0]
-		beta  = pde['init'][1]
-		phi1  = pde['init'][2]
+		"""Find coefficients of first equation"""
+#		alpha = pde['init'][0]
+#		beta  = pde['init'][1]
+#		phi1  = pde['init'][2]
 		a = pde['u_xx']
 		b = pde['u_x']
 		c = pde['u']
 	
 		a0 = 0
-		b0 = alpha * (2*a*a/h + h/tau - c*h) - beta * (2*a*a - b*h)
-		c0 = alpha * (2*a*a/h)
-		d0 = alpha * (u[0][k] * h/tau) - phi1(tau*(k+1)) * (2*a*a - b*h)
+		b0 = self.alpha * (2*a*a/h + h/tau - c*h) - self.beta * (2*a*a - b*h)
+		c0 = self.alpha * (2*a*a/h)
+		d0 = self.alpha * (u[0][k] * h/tau) - self.phi1(tau*(k+1)) * (2*a*a - b*h)
 		return (a0, b0, c0, d0)
 	
-	## Description: find coefficients of last equation
 	def last_eq(u):
-		alpha = pde['init1'][0]
-		beta  = pde['init1'][1]
-		phi1  = pde['init1'][2]
+		"""Find coefficients of last equation"""
+#		alpha = pde['init1'][0]
+#		beta  = pde['init1'][1]
+#		phi1  = pde['init1'][2]
 		a = pde['u_xx']
 		b = pde['u_x']
 		c = pde['u']
 
-		an = alpha * (-2*a*a/h)
-		bn = alpha * (2*a*a/h + h/tau - c*h) + beta * (2*a*a + b*h)
+		an = self.alpha * (-2*a*a/h)
+		bn = self.alpha * (2*a*a/h + h/tau - c*h) + self.beta * (2*a*a + b*h)
 		cn = 0
-		dn = alpha * (u[N][k] * h/tau) + phi2(tau*(k+1)) * (2*a*a + b*h)
+		dn = self.alpha * (u[N][k] * h/tau) + self.phi1(tau*(k+1)) * (2*a*a + b*h)
 		return (an, bn, cn, dn)
 
 	## Description: find coefficients of last equation
-	def midle_eq(pde):
+	def middle_eq(u):
+		"""Find coefficients of middle equation"""
 		a = pde['u_xx']
 		b = pde['u_x']
 		c = pde['u']
-		u = pde['grid']
 	
 		sigma = a*a * tau / (h*h)
 		omega = b * tau / (2*h)
@@ -116,8 +125,36 @@ class parabolic_pde(pde):
 
 		return (ai, bi, ci, di)
 
+class Hyperbolic_PDE(pde) implements PDE_Interface:
+	def __init__():
+		pde.__init__()
+		pass
 	
+	## Description: find coefficients of last equation
+	def middle_eq(u):
+		"""Find coefficients of middle equation"""
+		a = pde['u_xx']
+		b = pde['u_x']
+		c = pde['u']
+	
+		sigma = tau**2 * alpha**2 / h**2
+		omega = tau**2 * b / (2*h)
+		eta = c * tau**2 + 2 # TODO add f(x,t)
 
+		ai = sigma - 3*omega
+		bi = -2*sigma + 4*omega + eta + 1
+		ci = sigma - omega
+		di = -u[N][k]
+
+		return (ai, bi, ci, di)
+	def last_eq(u):
+		"""Find coefficients of last equation"""
+		pass
+
+	## Description: find coefficients of last equation
+	def middle_eq(u):
+		"""Find coefficients of middle equation"""
+		pass
 
 
 
