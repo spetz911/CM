@@ -158,6 +158,31 @@ class PDE:
 	def vec_mat(v, m):
 		return PDE.mat_vec(zip(*m), v)
 
+	def first_eq_2p(self, t):
+		"""Find coefficients of first equation"""
+		alpha = self.left[0]
+		beta  = self.left[1]
+		phi0  = self.left[2]
+		h = self.h
+		
+		a0 = 0
+		b0 = beta - alpha / h
+		c0 = alpha / h
+		d0 = phi0(t)
+		return (a0, b0, c0, d0)
+
+	def last_eq_2p(self, t):
+		"""Find coefficients of first equation"""
+		alpha = self.right[0]
+		beta  = self.right[1]
+		phi1  = self.right[2]
+		h = self.h
+		
+		a0 = -alpha / h
+		b0 = beta - alpha / h
+		c0 = 0
+		d0 = phi1(t)
+		return (a0, b0, c0, d0)
 	
 	def explicit_method(self): #TODO add threads
 		"""Just solve equation"""
@@ -172,9 +197,14 @@ class PDE:
 #		print_vec(coefficients)
 #		print([self.sigma, self.omega, self.eta])
 		
-		res = [0]+[U[i]+PDE.scalar(self.coefficients, U[i-1:i+2])
+		res = [0]+[PDE.scalar(self.coefficients, U[i-1:i+2])
 		                                     for i in range(1, N-1)]+[0]
-
+		
+		res = [ x - self.coef_t[1]*u0 for (x,u0) in zip(res, self.grid[-1])]
+		
+		if (self.coef_t[2] != 0):
+			res = [ x - self.coef_t[2]*u1 for (x,u1) in zip(res, self.grid[-2])]
+		
 
 		(a0, b0, c0, d0) = self.first_eq(self.tau*N)
 		(an, bn, cn, dn) = self.last_eq(self.tau*N)
@@ -186,19 +216,30 @@ class PDE:
 	
 		return res
 
-	def implicit_method(self):
+	def implicit_method(self, teta = 1):
 		"""Solve with method Progonki"""
 		U = self.grid[-1]
 		N = len(U)
 		t = self.tau*N
-	
+		if self.coef_t[2] != 0:
+			U1 = self.grid[-2]
+		else:
+			U1 = [0] * N
+		coeffs = self.coefficients
+		coef_t = self.coef_t
+		
 		M = Tridiagonal_Matrix()
 		
-		Eq = zip(* [self.first_eq(t)] +
-		           [self.middle_eq(i) for i in range(1, N-1)] +
-		           [self.last_eq(t)])
+		Eq = []
+		Eq.append(self.first_eq(t))
+		Eq.extend([(teta * coeffs[0],
+			        teta * coeffs[1] - coef_t[0],
+			        teta * coeffs[2],
+			        coef_t[1] * U[i] + coef_t[2] * U1[i])
+			                       for i in range(1, N-1)])
+		Eq.append(self.last_eq(t))
 		
-		[M.a,M.b,M.c,M.d] = list(Eq)
+		[M.a,M.b,M.c,M.d] = list(zip(* Eq))
 		M.n = N
 	
 	#	print_mat(Eq)
@@ -230,6 +271,21 @@ class PDE:
 		x = M.solve()
 		return x
 
+	def solve(self, method = 'Crank_Nicolson'):
+		"""Description"""
+		Us = self.grid
+		if method == 'explicit':
+			for t in frange(0, self.t, self.tau):
+				Us.append(self.explicit_method())
+		elif method == 'implicit':
+			for t in frange(0, self.t, self.tau):
+				Us.append(self.implicit_method())
+		elif method == 'Crank_Nicolson':
+			for t in frange(0, self.t, self.tau):
+				Us.append(self.Crank_Nicolson_method(0.5))
+		
+		print("complete")
+		return Us
 
 
 

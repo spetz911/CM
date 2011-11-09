@@ -17,6 +17,7 @@ class Hyperbolic_PDE(PDE):
 	coef_a = [+1, -2, +1]
 	coef_b = [-3, +4, -1]
 	coef_c = [+0, +1, +0]
+	coef_t = [+1, -2, +1]
 	
 	def __init__(self, pde = None):
 		super(Parabolic_PDE, self).__init__(pde)
@@ -29,29 +30,14 @@ class Hyperbolic_PDE(PDE):
 		l = self.l
 		tau = self.tau
 		
-		self.sigma = tau * a**2 / h**2
-		self.omega = tau * b / (2*h)
-		self.eta = tau * c # TODO add f(x,t)
+		self.sigma = tau**2 * a**2 / h**2
+		self.omega = tau**2 * b / (2*h)
+		self.eta = tau**2 * c # TODO add f(x,t)
 
 		self.coefficients = PDE.vec_mat([self.sigma, self.omega, self.eta],
 	                       [self.coef_a, self.coef_b, self.coef_c])
 	    
 		psi0 = self.initial0
-		U = []
-		U.append([ psi0(x) for x in frange(0, l, h)])
-		self.grid = U
-		
-	
-	
-	
-	
-	
-	def __init__():
-		pde.__init__()
-		self.sigma = tau**2 * a**2 / h**2
-		self.omega = tau**2 * b / (2*h)
-		self.eta = c * tau**2 + 2 # TODO add f(x,t)
-
 		U = []
 		psi0 = self.initial0
 		psi1 = self.initial1
@@ -62,22 +48,25 @@ class Hyperbolic_PDE(PDE):
 			U[-1][k] += (U[0][k-1] - 2*U[0][k] + U[0][k+1]) * alpha**2 * tau**2 / (2 * h**2)
  		
 		self.grid = U
-
+		
 
 	
-	## Description: find coefficients of last equation
-	def middle_eq(u):
+
+	def middle_eq(self, i, teta = 1):
 		"""Find coefficients of middle equation"""
-		a = pde['u_xx']
-		b = pde['u_x']
-		c = pde['u']
+		U = self.grid[-1]
+		N = len(U)
+		
+		coeff = PDE.vec_mat([self.sigma, self.omega, self.eta],
+		                    [self.coef_a, self.coef_b, self.coef_c])
 	
-
-		ai = sum(koef_a)
-		bi = sum(koef_b)
-		ci = sum(koef_c)
-		di = -u[N][k-1]
-
+		
+		ai = teta * coeff[0]
+		bi = teta * coeff[1] - 1
+		ci = teta * coeff[2]
+		di = -U[i]
+		
+		
 		return (ai, bi, ci, di)
 		
 	def last_eq(u):

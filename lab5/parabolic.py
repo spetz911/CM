@@ -16,6 +16,7 @@ class Parabolic_PDE(PDE):
 	coef_a = [+1, -2, +1]
 	coef_b = [-3, +4, -1]
 	coef_c = [+0, +1, +0]
+	coef_t = [+1, -1, +0]
 	
 	def __init__(self, pde = None):
 		super(Parabolic_PDE, self).__init__(pde)
@@ -81,37 +82,8 @@ class Parabolic_PDE(PDE):
 		dn = alpha * (U[-1] * h/tau) + phi1(t) * (2*a*a + b*h)
 		return (an, bn, cn, dn)
 
-	def middle_eq(self, i, teta = 1):
-		"""Find coefficients of middle equation"""
-		U = self.grid[-1]
-		N = len(U)
-		
-		coeff = PDE.vec_mat([self.sigma, self.omega, self.eta],
-		                    [self.coef_a, self.coef_b, self.coef_c])
 	
-		
-		ai = teta * coeff[0]
-		bi = teta * coeff[1] - 1
-		ci = teta * coeff[2]
-		di = -U[i]
-		
-		
-		return (ai, bi, ci, di)
-	
-	def solve(self, method = 'Crank_Nicolson'):
-		Us = self.grid
-		if method == 'explicit':
-			for t in frange(0, self.t, self.tau):
-				U.append(self.explicit_method())
-		elif method == 'implicit':
-			for t in frange(0, self.t, self.tau):
-				Us.append(self.implicit_method())
-		elif method == 'Crank_Nicolson':
-			for t in frange(0, self.t, self.tau):
-				Us.append(self.Crank_Nicolson_method(0.5))
-		
-		print("complete")
-		return Us
+
 
 
 #=====================================================================

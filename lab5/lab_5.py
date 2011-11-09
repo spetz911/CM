@@ -47,7 +47,7 @@ def main():
 #	print(pde.left[2](0))
 #	print(pde.right[2](0))
 	
-	res = pde.solve()
+	res = pde.solve('implicit')
 	
 	for k in [0,1,2,3]:
 		print("iter ", k)
