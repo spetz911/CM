@@ -4,11 +4,10 @@
 from math import sqrt,sin,cos,tan,pi,log,exp,sqrt
 from copy import copy, deepcopy
 from functools import reduce
+from tridiagonal import *
 
 from pprint import pprint
 
-from parabolic import *
-from hyperbolic import *
 
 
 eps = 0.0001
@@ -119,32 +118,6 @@ class PDE_parser():
 		except: pass
 
 
-class Tridiagonal_Matrix:
-	def solve(self):
-		"""Method progonki"""
-		a = self.a
-		b = self.b
-		c = self.c
-		d = self.d
-		n = self.n
-		
-		P = []
-		Q = []
-		P.append(-c[0]/b[0])
-		Q.append( d[0]/b[0])
-		
-		for i in range(1, n):
-			print(P[-1], Q[-1])
-			P.append( -c[i] / (b[i]+a[i]*P[i-1]) )
-			Q.append( (d[i] - a[i]*Q[i-1]) / (b[i] + a[i]*P[i-1]) )
-
-		x = [0]*n
-		x[n-1] = Q[n-1]
-		for i in range(n-2, -1, -1):
-			x[i] = P[i]*x[i+1] + Q[i]
-			
-		return x
-
 
 class MetaClass:
 	def copy(self, src):
@@ -233,16 +206,15 @@ class PDE:
 		x = M.solve()
 		return x
 
-	## Description: solve with method 'Progonki'
 	def Crank_Nicolson_method(self, teta = 1):
-		"""  """
+		""" Uk+1 - Uk = teta * implicit + (1 - teta) * explicit """
 		N = len(self.grid[-1])
 		Eq = []
 		Eq.append(self.first_eq(t))
 		for i in range(1, N-1):
 			Expl = (1 - teta) * PDE.scalar(coefficients, U[i-1:i+2])
 			Impl = self.middle_eq(i,teta)
-			Impl[4] -= Expl
+			Impl[3] -= Expl
 			Eq.append(Impl)
 		Eq.append(self.last_eq(t))
 

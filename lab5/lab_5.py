@@ -1,34 +1,68 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-
-
-
-
-
-start_f = lambda x: sin(x)
-border1 = lambda x: 0
-border2 = lambda x: 0
-
-x0 = 0
-x1 = 1
-
-h = 0.1
-tau = 0.5
-
-T = 7.0
-
-u0 = [start_f(x) for x in frange(x0, x1, h)]
-U1 = [u0]
-U2 = [u0]
+from tridiagonal import *
+from parabolic import *
+from hyperbolic import *
+from pde import *
 
 
 
 
 
 
-s0 = "15*u_t = 0.1*u_xx + 0.2*u_x + -3.0*u + x*t"
+##====================================================================
+## Description: parse all input
+def parse_file(f):
+	pde = PDE_parser()
+	pde.parse_pde(f.readline())
+	if pde.type == 'parabolic':
+		pde.parse_boundary_condition(f.readline())
+		pde.parse_boundary_condition(f.readline())
+		pde.parse_initial_condition(f.readline())
+		for s in f.readlines():
+			pde.parse_stuff(s)
+		return Parabolic_PDE(pde)
+
+	elif pde.type == 'hyperbolic':
+		pde.parse_boundary_condition(f.readline())
+		pde.parse_boundary_condition(f.readline())
+		pde.parse_initial_condition(f.readline())
+		pde.parse_initial_condition(f.readline())
+		for s in f.readlines():
+			pde.parse_stuff(s)
+
+	elif pde.type == 'elliptic':
+		pass
+
+	return pde
 
 
+
+#=====================================================================
+
+def main():
+
+	f = open("input")
+	
+	pde = parse_file(f)
+
+#	print(pde.left[2](0))
+#	print(pde.right[2](0))
+	
+	res = pde.solve()
+	
+	for k in [0,1,2,3]:
+		print("iter ", k)
+		print_vec(res[k])
+		print_vec([pde.fun(x, k*pde.tau) for x in frange(0, pde.l, pde.h)])
+	
+#	print(pde.u_x)
+
+
+#=====================================================================
+
+if __name__ == "__main__":
+	main()
 
 
