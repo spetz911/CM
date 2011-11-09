@@ -5,6 +5,8 @@ from math import sqrt,sin,cos,tan,pi,log,exp,sqrt
 from copy import copy, deepcopy
 from functools import reduce
 from tridiagonal import *
+# from parabolic import *
+# from hyperbolic import *
 
 from pprint import pprint
 
@@ -122,6 +124,7 @@ class PDE_parser():
 class MetaClass:
 	def copy(self, src):
 		[self.__setattr__(k,v) for k,v in src.__dict__.items()]
+	
 	def print(self):
 		from pprint import pprint
 		pprint(dict(self.__dict__))
@@ -142,6 +145,7 @@ class PDE:
 		else:
 			pass
 
+
 	@staticmethod
 	def scalar(v1, v2):
 		return sum(x1*x2 for (x1,x2) in zip(v1,v2))
@@ -160,24 +164,22 @@ class PDE:
 		U = self.grid[-1]
 		N = len(U)
 		
-		coefficients = PDE.vec_mat([self.sigma, self.omega, self.eta],
-		                       [self.coef_a, self.coef_b, self.coef_c])
+
 		# TODO f(x,t) != 0
 #		print(list(zip(* [self.coef_a, self.coef_b, self.coef_c])))
 		
-		print_mat([self.coef_a, self.coef_b, self.coef_c])
 		
-		print_vec(coefficients)
-		print([self.sigma, self.omega, self.eta])
+#		print_vec(coefficients)
+#		print([self.sigma, self.omega, self.eta])
 		
-		res = [0] + [U[i] + PDE.scalar(coefficients, U[i-1:i+2])
-		             for i in range(1, N-1)] + [0]
+		res = [0]+[U[i]+PDE.scalar(self.coefficients, U[i-1:i+2])
+		                                     for i in range(1, N-1)]+[0]
 
 
 		(a0, b0, c0, d0) = self.first_eq(self.tau*N)
 		(an, bn, cn, dn) = self.last_eq(self.tau*N)
-		print(self.first_eq(self.tau*N))
-		print(self.last_eq(self.tau*N))
+#		print(self.first_eq(self.tau*N))
+#		print(self.last_eq(self.tau*N))
 		
 		res[0]  = (d0 - c0*res[1])  / b0
 		res[-1] = (dn - an*res[-2]) / bn
@@ -192,8 +194,6 @@ class PDE:
 	
 		M = Tridiagonal_Matrix()
 		
-		print(self.middle_eq(1))
-	
 		Eq = zip(* [self.first_eq(t)] +
 		           [self.middle_eq(i) for i in range(1, N-1)] +
 		           [self.last_eq(t)])
@@ -201,21 +201,23 @@ class PDE:
 		[M.a,M.b,M.c,M.d] = list(Eq)
 		M.n = N
 	
-		print_mat(Eq)
+	#	print_mat(Eq)
 
 		x = M.solve()
 		return x
 
-	def Crank_Nicolson_method(self, teta = 1):
+	def Crank_Nicolson_method(self, teta = 0.5):
 		""" Uk+1 - Uk = teta * implicit + (1 - teta) * explicit """
+		U = self.grid[-1]
 		N = len(self.grid[-1])
+		t = self.tau*N
 		Eq = []
 		Eq.append(self.first_eq(t))
 		for i in range(1, N-1):
-			Expl = (1 - teta) * PDE.scalar(coefficients, U[i-1:i+2])
+			Expl = (1 - teta) * PDE.scalar(self.coefficients, U[i-1:i+2])
 			Impl = self.middle_eq(i,teta)
-			Impl[3] -= Expl
-			Eq.append(Impl)
+			eq = Impl[0], Impl[1], Impl[2], Impl[3] - Expl
+			Eq.append(eq)
 		Eq.append(self.last_eq(t))
 
 		M = Tridiagonal_Matrix()
@@ -223,41 +225,12 @@ class PDE:
 		[M.a,M.b,M.c,M.d] = list(zip(* Eq))
 		M.n = N
 		
-		print_mat(Eq)
+#		print_mat(Eq)
 
 		x = M.solve()
 		return x
-	
 
 
-
-
-
-##====================================================================
-## Description: parse all input
-def parse_file(f):
-	pde = PDE_parser()
-	pde.parse_pde(f.readline())
-	if pde.type == 'parabolic':
-		pde.parse_boundary_condition(f.readline())
-		pde.parse_boundary_condition(f.readline())
-		pde.parse_initial_condition(f.readline())
-		for s in f.readlines():
-			pde.parse_stuff(s)
-		return Parabolic_PDE(pde)
-
-	elif pde.type == 'hyperbolic':
-		pde.parse_boundary_condition(f.readline())
-		pde.parse_boundary_condition(f.readline())
-		pde.parse_initial_condition(f.readline())
-		pde.parse_initial_condition(f.readline())
-		for s in f.readlines():
-			pde.parse_stuff(s)
-
-	elif pde.type == 'elliptic':
-		pass
-
-	return pde
 
 
 #=====================================================================

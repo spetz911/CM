@@ -4,6 +4,7 @@
 from math import sqrt,sin,cos,tan,pi,log,exp,sqrt
 from copy import copy, deepcopy
 from functools import reduce
+from tridiagonal import *
 
 from pprint import pprint
 
@@ -11,6 +12,40 @@ from pde import *
 
 
 class Hyperbolic_PDE(PDE):
+	u_x = 0.0
+	u = 0.0
+	coef_a = [+1, -2, +1]
+	coef_b = [-3, +4, -1]
+	coef_c = [+0, +1, +0]
+	
+	def __init__(self, pde = None):
+		super(Parabolic_PDE, self).__init__(pde)
+		MetaClass.print(self)
+		
+		a = sqrt(self.u_xx)
+		b = self.u_x
+		c = self.u
+		h = self.h
+		l = self.l
+		tau = self.tau
+		
+		self.sigma = tau * a**2 / h**2
+		self.omega = tau * b / (2*h)
+		self.eta = tau * c # TODO add f(x,t)
+
+		self.coefficients = PDE.vec_mat([self.sigma, self.omega, self.eta],
+	                       [self.coef_a, self.coef_b, self.coef_c])
+	    
+		psi0 = self.initial0
+		U = []
+		U.append([ psi0(x) for x in frange(0, l, h)])
+		self.grid = U
+		
+	
+	
+	
+	
+	
 	def __init__():
 		pde.__init__()
 		self.sigma = tau**2 * a**2 / h**2

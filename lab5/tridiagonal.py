@@ -7,7 +7,6 @@ from functools import reduce
 
 from pprint import pprint
 
-from pde import *
 def IMPORT(self, *args):
 	return [self.__getattr__(a) for a in args]
 	
@@ -27,7 +26,6 @@ class Tridiagonal_Matrix:
 		Q.append( d[0]/b[0])
 		
 		for i in range(1, n):
-			print(P[-1], Q[-1])
 			P.append( -c[i] / (b[i]+a[i]*P[i-1]) )
 			Q.append( (d[i] - a[i]*Q[i-1]) / (b[i] + a[i]*P[i-1]) )
 
@@ -40,22 +38,7 @@ class Tridiagonal_Matrix:
 
 
 def main():
-
-	f = open("input")
-	
-	pde = parse_file(f)
-
-#	print(pde.left[2](0))
-#	print(pde.right[2](0))
-	
-	res = pde.solve()
-	
-	for k in [0,1,2,3]:
-		print("iter ", k)
-		print_vec(res[k])
-		print_vec([pde.fun(x, k*pde.tau) for x in frange(0, pde.l, pde.h)])
-	
-#	print(pde.u_x)
+	pass
 
 
 #=====================================================================

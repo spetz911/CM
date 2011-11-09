@@ -2,12 +2,9 @@
 # -*- coding: utf-8 -*-
 
 from tridiagonal import *
+from pde import *
 from parabolic import *
 from hyperbolic import *
-from pde import *
-
-
-
 
 
 

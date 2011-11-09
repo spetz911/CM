@@ -4,6 +4,7 @@
 from math import sqrt,sin,cos,tan,pi,log,exp,sqrt
 from copy import copy, deepcopy
 from functools import reduce
+from tridiagonal import *
 
 from pprint import pprint
 
@@ -18,21 +19,22 @@ class Parabolic_PDE(PDE):
 	
 	def __init__(self, pde = None):
 		super(Parabolic_PDE, self).__init__(pde)
-		
 		MetaClass.print(self)
-
+		
 		a = sqrt(self.u_xx)
 		b = self.u_x
 		c = self.u
 		h = self.h
 		l = self.l
-
 		tau = self.tau
 		
 		self.sigma = tau * a**2 / h**2
 		self.omega = tau * b / (2*h)
 		self.eta = tau * c # TODO add f(x,t)
-		
+
+		self.coefficients = PDE.vec_mat([self.sigma, self.omega, self.eta],
+	                       [self.coef_a, self.coef_b, self.coef_c])
+	    
 		psi0 = self.initial0
 		U = []
 		U.append([ psi0(x) for x in frange(0, l, h)])
@@ -94,20 +96,21 @@ class Parabolic_PDE(PDE):
 		di = -U[i]
 		
 		
-
 		return (ai, bi, ci, di)
 	
-	def solve(self):
+	def solve(self, method = 'Crank_Nicolson'):
 		Us = self.grid
+		if method == 'explicit':
+			for t in frange(0, self.t, self.tau):
+				U.append(self.explicit_method())
+		elif method == 'implicit':
+			for t in frange(0, self.t, self.tau):
+				Us.append(self.implicit_method())
+		elif method == 'Crank_Nicolson':
+			for t in frange(0, self.t, self.tau):
+				Us.append(self.Crank_Nicolson_method(0.5))
 		
-#		for t in frange(0, self.t, self.tau):
-#			U.append(self.explicit_method())
-	
-		for t in frange(0, self.t, self.tau):
-			Us.append(self.implicit_method())
-		
-		
-		print("ololo")
+		print("complete")
 		return Us
 
 
