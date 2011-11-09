@@ -29,95 +29,6 @@ def print_vec(row, k = 3):
 	print()
 #	print("--------")
 
-class PDE_parser():
-	def __init__(self):
-		pass
-	
-	## Description: for parsing one element of summ
-	@staticmethod
-	def get_token(x):
-		tmp = x.split('*')
-		if tmp[-1] in ['u', 'u_xx', 'u_x', 'u_yy', 'u_y', 'u_tt', 'u_t']:
-			try:
-				a = float(tmp[0])
-			except:
-				a = 1.0
-			return (tmp[-1], a)
-		else:
-			return None
-
-	def parse_pde(self, s):
-		"""For parsing partial differential equation"""
-		[left, right] = s.lower().rstrip().replace(' ','').split('=')
-		self.type = None
-		if ('u_xx' in right) and ('u_t' in left):
-			self.type = 'parabolic'
-		elif ('u_xx' in right) and ('u_tt' in left):
-			self.type = 'hyperbolic'
-		elif ('u_xx' in right) and ('u_yy' in right):
-			self.type = 'elliptic'
-
-		tokens = [ x for x in left.split('+') + right.split('+')]
-		rest = []
-		for x in tokens:
-			t = PDE_parser.get_token(x)
-			if t:
-				self.__setattr__(t[0], t[1])
-			else:
-				rest.append(x)
-		try: self.fun = eval("lambda x,t: " + "+".join(rest))
-		except: self.fun = lambda x,t: 0.0
-
-	def parse_stuff(self, line):
-		"""For parsing other coefficients"""
-		[left, right] = line.lower().replace(' ','').split('=')
-		if left in ['l', 'lx', 'ly', 't', 'w', 'eps', 'tau', 'h']:
-			self.__setattr__(left, float(right))
-		elif left == 'result':
-			try: self.__setattr__('fun', eval("lambda x,t: " + right))
-			except: self.fun = lambda x,t: 0.0
-
-	## Description: for solve init eq
-	def parse_initial_condition(self, line):
-		[left, right] = line.lower().replace(' ','').split('=')
-		if left in ['u(x,0)', 'u(x,y,0)', 'u(x,y)']:
-			try: self.initial0 = eval("lambda x,y=0: " + right)
-			except: self.initial0 = lambda x,y=0: 0.0
-		if left in ['u_t(x,0)', 'u_t(x,y,0)', 'u_t(x,y)']:
-			try: self.initial1 = eval("lambda x,y=0: " + right)
-			except: self.initial1 = lambda x,y=0: 0.0
-
-	## Description: for solve limit eq
-	def parse_boundary_condition(self, line):
-		[left, right] = line.lower().replace(' ','').split('=')
-		#! alpha*u_x + beta*u = f(t)
-		alpha = 0.0
-		beta = 0.0
-		
-		for elem in left.split('+'):
-			tmp = elem.split('*')
-			if ('u_x' in tmp[-1] or 'u_y' in tmp[-1]):
-				try: alpha = float(tmp[0])
-				except: alpha = 1.0
-			elif ('u' in tmp[-1]):
-				try: beta = float(tmp[0])
-				except: beta = 1.0
-		try: result = (alpha, beta, eval("lambda t: " + right))
-		except: result = (alpha, beta, lambda t: 0.0)
-
-		if   ('(x,ly' in left):
-			self.north = result
-		elif ('(0,x' in left):
-			self.south = result
-		elif ('(l' in left): # (lx,y,0)
-			self.east = result
-		elif ('(0' in left): # (0,y,0)
-			self.west = result
-		
-		try: self.left = self.west
-		except: pass
-		try: self.right = self.east
-		except: pass
 
 
 
@@ -145,6 +56,55 @@ class PDE:
 		else:
 			pass
 
+		self.set_equation_params()
+		self.initial_cond_lvl0()
+		
+		print("GGG ", self.grid)
+
+		# means that time has tau**2
+		if self.coef_t[2] != 0:
+			self.initial_cond_lvl1()
+		
+		if self.approximate_init == '2lvl' and self.coef_t[2] != 0:
+			self.initial_cond_lvl2()
+		
+			
+		self.coeff = PDE.vec_mat([self.sigma, self.omega, self.eta],
+                                 [self.coef_a, self.coef_b, self.coef_c])
+
+	def set_equation_params(self):
+		self.a = sqrt(self.u_xx)
+		self.b = self.u_x
+		self.c = self.u
+		
+		self.sigma = self.tau * self.a**2 / self.h**2
+		self.omega = self.tau * self.b / (2*self.h)
+		self.eta = self.tau * self.c # TODO add f(x,t)
+
+	def initial_cond_lvl0(self):
+		psi0 = self.initial0
+		self.grid = []
+		self.grid.append([ psi0(x) for x in frange(0, self.l, self.h)])
+
+	def initial_cond_lvl1(self):
+		self.sigma *= self.tau
+		self.omega *= self.tau
+		self.eta   *= self.tau
+
+		psi0 = self.initial0
+		psi1 = self.initial1
+		U.append([ psi0(x) + psi1(x)*tau for x in frange(0, self.l, self.h)])
+		
+
+	
+	def initial_cond_lvl2(self):
+		U0 = self.grid[0]
+		U1 = self.grid[1]
+		N = len(U0)
+
+		U1[1:N-1] = [U[k] + PDE.scalar(coef_t, U0[k-1 : k+2]) * a**2 * tau**2 / (2*h**2)
+		             for k in range(1, N-1)]
+	
 
 	@staticmethod
 	def scalar(v1, v2):
@@ -158,7 +118,19 @@ class PDE:
 	def vec_mat(v, m):
 		return PDE.mat_vec(zip(*m), v)
 
-	def first_eq_2p(self, t):
+	def first_eq(self, t):
+		if self.approximate_boundary == '1lvl':
+			return self.first_eq_1lvl(t)
+		if self.approximate_boundary == '2lvl':
+			return self.first_eq_2lvl(t)
+		
+	def last_eq(self, t):
+		if self.approximate_boundary == '1lvl':
+			return self.last_eq_1lvl(t)
+		if self.approximate_boundary == '2lvl':
+			return self.last_eq_2lvl(t)
+
+	def first_eq_1lvl(self, t):
 		"""Find coefficients of first equation"""
 		alpha = self.left[0]
 		beta  = self.left[1]
@@ -171,7 +143,7 @@ class PDE:
 		d0 = phi0(t)
 		return (a0, b0, c0, d0)
 
-	def last_eq_2p(self, t):
+	def last_eq_1lvl(self, t):
 		"""Find coefficients of first equation"""
 		alpha = self.right[0]
 		beta  = self.right[1]
@@ -184,32 +156,35 @@ class PDE:
 		d0 = phi1(t)
 		return (a0, b0, c0, d0)
 	
+	@staticmethod
+	def explicit_fun(coeff, coef_t, U0, U1 ,i): #TODO add threads
+		res  = PDE.scalar(coeff, U0[i-1:i+2])
+		res -= coef_t[1] * U0[i]
+		res -= coef_t[2] * U1[i]
+		return res
+	
 	def explicit_method(self): #TODO add threads
 		"""Just solve equation"""
-		U = self.grid[-1]
+		U0 = self.grid[-1]
 		N = len(U)
+		if self.coef_t[2] != 0:  # means that time has 2lvl
+			U1 = self.grid[-2]
+		else:
+			U1 = [0] * N
 		
-
 		# TODO f(x,t) != 0
-#		print(list(zip(* [self.coef_a, self.coef_b, self.coef_c])))
-		
-		
+
+#		print(list(zip(* [self.coef_a, self.coef_b, self.coef_c])))		
 #		print_vec(coefficients)
 #		print([self.sigma, self.omega, self.eta])
 		
-		res = [0]+[PDE.scalar(self.coefficients, U[i-1:i+2])
-		                                     for i in range(1, N-1)]+[0]
-		
-		res = [ x - self.coef_t[1]*u0 for (x,u0) in zip(res, self.grid[-1])]
-		
-		if (self.coef_t[2] != 0):
-			res = [ x - self.coef_t[2]*u1 for (x,u1) in zip(res, self.grid[-2])]
-		
+		res = [0]*N
+		for i in range(1, N-1):
+			res[i] = PDE.explicit_fun(coeff,coef_t,U0,U1,i)
+
 
 		(a0, b0, c0, d0) = self.first_eq(self.tau*N)
 		(an, bn, cn, dn) = self.last_eq(self.tau*N)
-#		print(self.first_eq(self.tau*N))
-#		print(self.last_eq(self.tau*N))
 		
 		res[0]  = (d0 - c0*res[1])  / b0
 		res[-1] = (dn - an*res[-2]) / bn
@@ -221,20 +196,20 @@ class PDE:
 		U = self.grid[-1]
 		N = len(U)
 		t = self.tau*N
-		if self.coef_t[2] != 0:
+		coef_t = self.coef_t
+		if coef_t[2] != 0:  # means that time has 2lvl
 			U1 = self.grid[-2]
 		else:
 			U1 = [0] * N
-		coeffs = self.coefficients
-		coef_t = self.coef_t
+		
 		
 		M = Tridiagonal_Matrix()
 		
 		Eq = []
 		Eq.append(self.first_eq(t))
-		Eq.extend([(teta * coeffs[0],
-			        teta * coeffs[1] - coef_t[0],
-			        teta * coeffs[2],
+		Eq.extend([(teta * self.coeff[0],
+			        teta * self.coeff[1] - coef_t[0],
+			        teta * self.coeff[2],
 			        coef_t[1] * U[i] + coef_t[2] * U1[i])
 			                       for i in range(1, N-1)])
 		Eq.append(self.last_eq(t))

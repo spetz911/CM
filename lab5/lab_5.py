@@ -5,7 +5,7 @@ from tridiagonal import *
 from pde import *
 from parabolic import *
 from hyperbolic import *
-
+from parser import *
 
 
 ##====================================================================
