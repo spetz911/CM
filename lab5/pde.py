@@ -7,6 +7,10 @@ from functools import reduce
 
 from pprint import pprint
 
+from parabolic import *
+from hyperbolic import *
+
+
 eps = 0.0001
 
 def print_mat(mat):
@@ -17,7 +21,7 @@ def print_mat(mat):
 		print()
 	print("--------")
 
-def print_vec(row, k = 4):
+def print_vec(row, k = 3):
 #	print("vector:")
 	for elem in row:
 		print(round(elem, k), end = "\t")
@@ -192,12 +196,11 @@ class PDE:
 		
 		print_vec(coefficients)
 		print([self.sigma, self.omega, self.eta])
+		
 		res = [0] + [U[i] + PDE.scalar(coefficients, U[i-1:i+2])
 		             for i in range(1, N-1)] + [0]
-		i = 2
-		print("Ui-1..Ui+1",  U[i-1:i+2])
-		
-		
+
+
 		(a0, b0, c0, d0) = self.first_eq(self.tau*N)
 		(an, bn, cn, dn) = self.last_eq(self.tau*N)
 		print(self.first_eq(self.tau*N))
@@ -215,14 +218,14 @@ class PDE:
 		t = self.tau*N
 	
 		M = Tridiagonal_Matrix()
+		
+		print(self.middle_eq(1))
 	
 		Eq = zip(* [self.first_eq(t)] +
-		           [self.middle_eq(k) for k in range(1, N-1)] +
+		           [self.middle_eq(i) for i in range(1, N-1)] +
 		           [self.last_eq(t)])
 		
-		Eq = list(Eq)
-		
-		[M.a,M.b,M.c,M.d] = Eq
+		[M.a,M.b,M.c,M.d] = list(Eq)
 		M.n = N
 	
 		print_mat(Eq)
@@ -231,157 +234,31 @@ class PDE:
 		return x
 
 	## Description: solve with method 'Progonki'
-	def Crank_Nicolson_method(self):
-		pass
-		# a_i /= Q 
-		# b_i /= Q 
-		# c_i /= Q 
-		# d_i += explicit_method * (1-Q) 
+	def Crank_Nicolson_method(self, teta = 1):
+		"""  """
+		N = len(self.grid[-1])
+		Eq = []
+		Eq.append(self.first_eq(t))
+		for i in range(1, N-1):
+			Expl = (1 - teta) * PDE.scalar(coefficients, U[i-1:i+2])
+			Impl = self.middle_eq(i,teta)
+			Impl[4] -= Expl
+			Eq.append(Impl)
+		Eq.append(self.last_eq(t))
+
+		M = Tridiagonal_Matrix()
+		
+		[M.a,M.b,M.c,M.d] = list(zip(* Eq))
+		M.n = N
+		
+		print_mat(Eq)
+
+		x = M.solve()
+		return x
 	
 
 
-class Parabolic_PDE(PDE):
-	u_x = 0.0
-	u = 0.0
-	coef_a = [+1, -2, +1]
-	coef_b = [-3, +4, -1]
-	coef_c = [+0, +1, +0]
-	
-	def __init__(self, pde = None):
-		super(Parabolic_PDE, self).__init__(pde)
-		
-		MetaClass.print(self)
 
-		a = sqrt(self.u_xx)
-		b = self.u_x
-		c = self.u
-		h = self.h
-		l = self.l
-
-		tau = self.tau
-		
-		self.sigma = tau * a**2 / h**2
-		self.omega = tau * b / (2*h)
-		self.eta = tau * c # TODO add f(x,t)
-		
-		psi0 = self.initial0
-		U = []
-		U.append([ psi0(x) for x in frange(0, l, h)])
-		self.grid = U
-	
-	
-	def first_eq(self, t):
-		"""Find coefficients of first equation"""
-		alpha = self.left[0]
-		beta  = self.left[1]
-		phi0  = self.left[2]
-		U = self.grid[-1]
-		
-		a = self.u_xx
-		b = self.u_x
-		c = self.u
-		h = self.h
-		tau = self.tau
-		
-		a0 = 0
-		b0 = alpha * (2*a*a/h + h/tau - c*h) - beta * (2*a*a - b*h)
-		c0 = alpha * (-2*a*a/h)
-		d0 = alpha * (U[0] * h/tau) - phi0(t) * (2*a*a - b*h)
-		return (a0, b0, c0, d0)
-	
-	def last_eq(self, t):
-		"""Find coefficients of last equation"""
-		alpha = self.right[0]
-		beta  = self.right[1]
-		phi1  = self.right[2]
-		U = self.grid[-1]
-		N = len(U)
-
-		a = self.u_xx
-		b = self.u_x
-		c = self.u
-		h = self.h
-		tau = self.tau
-
-		an = alpha * (-2*a*a/h)
-		bn = alpha * (2*a*a/h + h/tau - c*h) + beta * (2*a*a + b*h)
-		cn = 0
-		dn = alpha * (U[-1] * h/tau) + phi1(t) * (2*a*a + b*h)
-		return (an, bn, cn, dn)
-
-	def middle_eq(self, i):
-		"""Find coefficients of middle equation"""
-		U = self.grid[-1]
-		N = len(U)
-		
-		ai = sum(self.coef_a)
-		bi = sum(self.coef_b)
-		ci = sum(self.coef_c)
-		di = -U[i]
-
-		return (ai, bi, ci, di)
-	
-	def solve(self):
-		Us = self.grid
-		
-#		for t in frange(0, self.t, self.tau):
-#			U.append(self.explicit_method())
-	
-		for t in frange(0, self.t, self.tau):
-			Us.append(self.implicit_method())
-		
-		
-		print("ololo")
-		return U
-	
-
-class Hyperbolic_PDE(PDE):
-	def __init__():
-		pde.__init__()
-		self.sigma = tau**2 * a**2 / h**2
-		self.omega = tau**2 * b / (2*h)
-		self.eta = c * tau**2 + 2 # TODO add f(x,t)
-
-		U = []
-		psi0 = self.initial0
-		psi1 = self.initial1
-		
-		U.append([ psi0(x) for x in frange(0, T, t)])
-		U.append([ psi0(x) + psi1(x)*tau for x in frange(0, T, t)])
-		for k in range(1, N-1):
-			U[-1][k] += (U[0][k-1] - 2*U[0][k] + U[0][k+1]) * alpha**2 * tau**2 / (2 * h**2)
- 		
-		self.grid = U
-
-
-	
-	## Description: find coefficients of last equation
-	def middle_eq(u):
-		"""Find coefficients of middle equation"""
-		a = pde['u_xx']
-		b = pde['u_x']
-		c = pde['u']
-	
-
-		ai = sum(koef_a)
-		bi = sum(koef_b)
-		ci = sum(koef_c)
-		di = -u[N][k-1]
-
-		return (ai, bi, ci, di)
-		
-	def last_eq(u):
-		"""Find coefficients of last equation"""
-		pass
-
-	## Description: find coefficients of last equation
-	def middle_eq(u):
-		"""Find coefficients of middle equation"""
-		pass
-		
-	def solve(self):
-		U = self.grid
-		print("ololo")
 
 
 ##====================================================================
