@@ -2,20 +2,7 @@
 # -*- coding: utf-8 -*-
 
 
-def print_mat(mat):
-	print("matrix:")
-	for row in mat:
-		for elem in row:
-			print(round(elem, 3), end = "\t")
-		print()
-	print("--------")
 
-def print_vec(row):
-	print("vector:")
-	for elem in row:
-		print(round(elem, 4), end = "\t")
-	print()
-	print("--------")
 
 
 

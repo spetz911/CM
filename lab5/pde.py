@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from math import sqrt,sin,cos,tan,pi,log,exp
+from math import sqrt,sin,cos,tan,pi,log,exp,sqrt
 from copy import copy, deepcopy
 from functools import reduce
 
@@ -9,6 +9,20 @@ from pprint import pprint
 
 eps = 0.0001
 
+def print_mat(mat):
+	print("matrix:")
+	for row in mat:
+		for elem in row:
+			print(round(elem, 3), end = "\t")
+		print()
+	print("--------")
+
+def print_vec(row, k = 4):
+#	print("vector:")
+	for elem in row:
+		print(round(elem, k), end = "\t")
+	print()
+#	print("--------")
 
 class PDE_parser():
 	def __init__(self):
@@ -54,6 +68,9 @@ class PDE_parser():
 		[left, right] = line.lower().replace(' ','').split('=')
 		if left in ['l', 'lx', 'ly', 't', 'w', 'eps', 'tau', 'h']:
 			self.__setattr__(left, float(right))
+		elif left == 'result':
+			try: self.__setattr__('fun', eval("lambda x,t: " + right))
+			except: self.fun = lambda x,t: 0.0
 
 	## Description: for solve init eq
 	def parse_initial_condition(self, line):
@@ -113,7 +130,8 @@ class Tridiagonal_Matrix:
 		Q.append( d[0]/b[0])
 		
 		for i in range(1, n):
-			P.append( -c[i] / (b[i]+a[i]*P[i-1]) ) 
+			print(P[-1], Q[-1])
+			P.append( -c[i] / (b[i]+a[i]*P[i-1]) )
 			Q.append( (d[i] - a[i]*Q[i-1]) / (b[i] + a[i]*P[i-1]) )
 
 		x = [0]*n
@@ -160,46 +178,57 @@ class PDE:
 		return PDE.mat_vec(zip(*m), v)
 
 	
-	## Description: 
 	def explicit_method(self): #TODO add threads
 		"""Just solve equation"""
 		U = self.grid[-1]
 		N = len(U)
-
-		sigma = self.sigma
-		omega = self.omega
-		eta = self.eta
 		
-		coef_mat = PDE.vec_mat([self.sigma, self.omega, self.eta],
+		coefficients = PDE.vec_mat([self.sigma, self.omega, self.eta],
 		                       [self.coef_a, self.coef_b, self.coef_c])
 		# TODO f(x,t) != 0
 #		print(list(zip(* [self.coef_a, self.coef_b, self.coef_c])))
 		
-		print(coef_mat)
+		print_mat([self.coef_a, self.coef_b, self.coef_c])
 		
-		res = [0] + [PDE.scalar(coef_mat, U[i-1:(i+1)+1]) for i in range(1, N-1)] + [0]
+		print_vec(coefficients)
+		print([self.sigma, self.omega, self.eta])
+		res = [0] + [U[i] + PDE.scalar(coefficients, U[i-1:i+2])
+		             for i in range(1, N-1)] + [0]
+		i = 2
+		print("Ui-1..Ui+1",  U[i-1:i+2])
 		
-		(a0, b0, c0, d0) = self.first_eq(U)
-		(an, bn, cn, dn) = self.last_eq(U)
+		
+		(a0, b0, c0, d0) = self.first_eq(self.tau*N)
+		(an, bn, cn, dn) = self.last_eq(self.tau*N)
+		print(self.first_eq(self.tau*N))
+		print(self.last_eq(self.tau*N))
+		
 		res[0]  = (d0 - c0*res[1])  / b0
-		res[-1] = (dn - bn*res[-2]) / an
+		res[-1] = (dn - an*res[-2]) / bn
 	
 		return res
 
-	def implicit_method(self, u):
+	def implicit_method(self):
 		"""Solve with method Progonki"""
-		N = len(u)
+		U = self.grid[-1]
+		N = len(U)
+		t = self.tau*N
 	
 		M = Tridiagonal_Matrix()
 	
-		M = zip(* self.first_eq() + self.middle_eq() *(N-2) + self.last_eq())
-	
+		Eq = zip(* [self.first_eq(t)] +
+		           [self.middle_eq(k) for k in range(1, N-1)] +
+		           [self.last_eq(t)])
+		
+		Eq = list(Eq)
+		
+		[M.a,M.b,M.c,M.d] = Eq
 		M.n = N
 	
-		print_mat([M.a, M.b, M.c, M.d])
+		print_mat(Eq)
 
 		x = M.solve()
-		print_vec([u0] + x + [u1])
+		return x
 
 	## Description: solve with method 'Progonki'
 	def Crank_Nicolson_method(self):
@@ -223,7 +252,7 @@ class Parabolic_PDE(PDE):
 		
 		MetaClass.print(self)
 
-		a = self.u_xx
+		a = sqrt(self.u_xx)
 		b = self.u_x
 		c = self.u
 		h = self.h
@@ -233,7 +262,7 @@ class Parabolic_PDE(PDE):
 		
 		self.sigma = tau * a**2 / h**2
 		self.omega = tau * b / (2*h)
-		self.eta = c * tau # TODO add f(x,t)
+		self.eta = tau * c # TODO add f(x,t)
 		
 		psi0 = self.initial0
 		U = []
@@ -247,7 +276,7 @@ class Parabolic_PDE(PDE):
 		beta  = self.left[1]
 		phi0  = self.left[2]
 		U = self.grid[-1]
-
+		
 		a = self.u_xx
 		b = self.u_x
 		c = self.u
@@ -256,7 +285,7 @@ class Parabolic_PDE(PDE):
 		
 		a0 = 0
 		b0 = alpha * (2*a*a/h + h/tau - c*h) - beta * (2*a*a - b*h)
-		c0 = alpha * (2*a*a/h)
+		c0 = alpha * (-2*a*a/h)
 		d0 = alpha * (U[0] * h/tau) - phi0(t) * (2*a*a - b*h)
 		return (a0, b0, c0, d0)
 	
@@ -280,20 +309,27 @@ class Parabolic_PDE(PDE):
 		dn = alpha * (U[-1] * h/tau) + phi1(t) * (2*a*a + b*h)
 		return (an, bn, cn, dn)
 
-	def middle_eq(u):
+	def middle_eq(self, i):
 		"""Find coefficients of middle equation"""
-		ai = sum(koef_a)
-		bi = sum(koef_b)
-		ci = sum(koef_c)
-		di = -u[N][k]
+		U = self.grid[-1]
+		N = len(U)
+		
+		ai = sum(self.coef_a)
+		bi = sum(self.coef_b)
+		ci = sum(self.coef_c)
+		di = -U[i]
 
 		return (ai, bi, ci, di)
 	
 	def solve(self):
-		U = self.grid
+		Us = self.grid
 		
+#		for t in frange(0, self.t, self.tau):
+#			U.append(self.explicit_method())
+	
 		for t in frange(0, self.t, self.tau):
-			U.append(self.explicit_method())
+			Us.append(self.implicit_method())
+		
 		
 		print("ololo")
 		return U
@@ -382,10 +418,18 @@ def main():
 	f = open("input")
 	
 	pde = parse_file(f)
-	res = pde.solve()
-	pprint(res[0])
+
+#	print(pde.left[2](0))
+#	print(pde.right[2](0))
 	
-#	print()
+	res = pde.solve()
+	
+	for k in [0,1,2,3]:
+		print("iter ", k)
+		print_vec(res[k])
+		print_vec([pde.fun(x, k*pde.tau) for x in frange(0, pde.l, pde.h)])
+	
+#	print(pde.u_x)
 
 
 #=====================================================================
