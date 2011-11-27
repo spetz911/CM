@@ -8,6 +8,8 @@ from tridiagonal import *
 # from parabolic import *
 # from hyperbolic import *
 
+from multiprocessing import Pool
+
 from pprint import pprint
 
 
@@ -55,7 +57,7 @@ class PDE:
 			MetaClass.copy(self, pde)
 		else:
 			pass
-
+		self.pool = Pool(processes=4)
 		self.set_equation_params()
 		self.initial_cond_lvl0()
 		
@@ -155,7 +157,17 @@ class PDE:
 		c0 = 0
 		d0 = phi1(t)
 		return (a0, b0, c0, d0)
-	
+
+
+
+# if __name__ == '__main__':
+#    pool = Pool(processes=4)              # start 4 worker processes
+#    result = pool.apply_async(f, [10])     # evaluate "f(10)" asynchronously
+#    print(result.get(timeout=1))           # prints "100" unless your computer is very slow
+#    print())          # prints "[0, 1, 4,..., 81]"
+
+
+
 	@staticmethod
 	def explicit_fun(coeff, coef_t, U0, U1 ,i): #TODO add threads
 		res  = PDE.scalar(coeff, U0[i-1:i+2])
@@ -179,8 +191,9 @@ class PDE:
 #		print([self.sigma, self.omega, self.eta])
 		
 		res = [0]*N
-		for i in range(1, N-1):
-			res[i] = PDE.explicit_fun(coeff,coef_t,U0,U1,i)
+		res[1:-1] = self.threads_pool.map(PDE.explicit_fun,
+		                        [(coeff,coef_t,U0,U1,i) for i in range(1, N-1)])
+
 
 
 		(a0, b0, c0, d0) = self.first_eq(self.tau*N)
@@ -289,3 +302,4 @@ def main():
 
 if __name__ == "__main__":
 	main()
+

@@ -1,9 +1,9 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 ###-------------------------------------------------------------------
-### File    : parabolic.py
+### File    : elliptic.py
 ### Author  : Oleg Baskakov
-### Description : parabolic pde solver
+### Description : elliptic pde solver
 ###
 ### 2011. Written for Moscow Aviation Institute.
 ###-------------------------------------------------------------------
@@ -17,19 +17,16 @@ from pprint import pprint
 
 from pde import *
 
-class Parabolic_PDE(PDE):
-	approximate_init = '1lvl'
+class Elliptic_PDE(PDE):
 	approximate_boundary = '1lvl'
 	
 	u_x = 0.0
 	u = 0.0
-	coef_t = [+1, -1, +0]
-	coef_a = [+1, -2, +1]
-	coef_b = [-3, +4, -1]
-	coef_c = [+0, +1, +0]
+	coef_x = [+1, -2, +1]
+	coef_y = [+1, -2, +1]
 	
 	def __init__(self, pde = None):
-		super(Parabolic_PDE, self).__init__(pde)
+		super(Elliptic_PDE, self).__init__(pde)
 		MetaClass.print(self)
 
 	

@@ -1,5 +1,12 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
+###-------------------------------------------------------------------
+### File    : hyperbolic.py
+### Author  : Oleg Baskakov
+### Description : hyperbolic pde solver
+###
+### 2011. Written for Moscow Aviation Institute.
+###-------------------------------------------------------------------
 
 from math import sqrt,sin,cos,tan,pi,log,exp,sqrt
 from copy import copy, deepcopy

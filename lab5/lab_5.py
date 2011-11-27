@@ -1,5 +1,12 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
+###-------------------------------------------------------------------
+### File    : lab_5.py
+### Author  : Oleg Baskakov
+### Description : test cases for 5th lab
+###
+### 2011. Written for Moscow Aviation Institute.
+###-------------------------------------------------------------------
 
 from tridiagonal import *
 from pde import *
@@ -41,18 +48,27 @@ def parse_file(f):
 def main():
 
 	f = open("input")
-	
 	pde = parse_file(f)
+	f.close()
 
 #	print(pde.left[2](0))
 #	print(pde.right[2](0))
 	
 	res = pde.solve('implicit')
+	grid = list(frange(0, pde.l, pde.h))
+	origin = [[pde.fun(x,k*pde.tau) for x in grid]
+									for k in range(4)]
 	
 	for k in [0,1,2,3]:
 		print("iter ", k)
 		print_vec(res[k])
-		print_vec([pde.fun(x, k*pde.tau) for x in frange(0, pde.l, pde.h)])
+		print_vec(origin[k])
+	
+	
+	f = open("result", 'w')
+	f.write(str({'result':res, 'origin':origin, 'grid':grid}))
+#	f.write("\n")
+	f.close()
 	
 #	print(pde.u_x)
 
