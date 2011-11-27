@@ -47,7 +47,7 @@ def parse_file(f):
 
 def main():
 
-	f = open("input")
+	f = open("input_e")
 	pde = parse_file(f)
 	f.close()
 

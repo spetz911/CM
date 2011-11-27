@@ -69,6 +69,49 @@ class Elliptic_PDE(PDE):
 		dn = alpha * (U[-1] * h/tau) + phi1(t) * (2*a*a + b*h)
 		return (an, bn, cn, dn)
 
+
+def Liebmann_method(self):
+		"""Just solve equation"""
+		U = self.grid[-1]
+		N = len(U)
+		M = len(U[0])
+		h = self.h
+		
+		U = [[1/4 * (U[i][j-1] + U[i-1][j] + U[i+1][j] + U[i][j+1] - h*h*f(i*h, j*h))
+			  for j in range(1, M-1)]
+			  for i in range(1, N-1)]
+		
+		#!solve boundary conditions here! 
+		
+		
+		
+		if self.coef_t[2] != 0:  # means that time has 2lvl
+			U1 = self.grid[-2]
+		else:
+			U1 = [0] * N
+		
+		#TODO f(x,t) != 0
+
+#		print(list(zip(* [self.coef_a, self.coef_b, self.coef_c])))		
+#		print_vec(coefficients)
+#		print([self.sigma, self.omega, self.eta])
+		
+		res = [0]*N
+		res[1:-1] = self.threads_pool.map(PDE.explicit_fun,
+		                        [(coeff,coef_t,U0,U1,i) for i in range(1, N-1)])
+
+
+
+		(a0, b0, c0, d0) = self.first_eq(self.tau*N)
+		(an, bn, cn, dn) = self.last_eq(self.tau*N)
+		
+		res[0]  = (d0 - c0*res[1])  / b0
+		res[-1] = (dn - an*res[-2]) / bn
+	
+		return res
+	
+	
+	
 	
 
 
