@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 ###-------------------------------------------------------------------
 ### File    : parabolic.py
@@ -72,7 +72,19 @@ class Parabolic_PDE(PDE):
 		dn = alpha * (U[-1] * h/tau) + phi1(t) * (2*a*a + b*h)
 		return (an, bn, cn, dn)
 
-	
+	def check_scheme(self):
+		N = self.N
+		h = self.h
+		tau = self.tau
+		u = self.orig
+		
+		for j in range(0, T):
+			fu = [u(i*h, tau*j) for i in range(1, N-1)]
+			
+		
+		max(   for i in  )
+		
+		
 
 
 

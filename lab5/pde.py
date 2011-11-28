@@ -178,7 +178,7 @@ class PDE:
 	def explicit_method(self): #TODO add threads
 		"""Just solve equation"""
 		U0 = self.grid[-1]
-		N = len(U)
+		N = len(U0)
 		if self.coef_t[2] != 0:  # means that time has 2lvl
 			U1 = self.grid[-2]
 		else:

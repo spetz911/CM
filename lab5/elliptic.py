@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 ###-------------------------------------------------------------------
 ### File    : elliptic.py
@@ -29,7 +29,6 @@ class Elliptic_PDE(PDE):
 		super(Elliptic_PDE, self).__init__(pde)
 		MetaClass.print(self)
 
-	
 	def first_eq_2lvl(self, t):
 		"""Find coefficients of first equation"""
 		alpha = self.left[0]
@@ -69,47 +68,117 @@ class Elliptic_PDE(PDE):
 		dn = alpha * (U[-1] * h/tau) + phi1(t) * (2*a*a + b*h)
 		return (an, bn, cn, dn)
 
+	@staticmethod
+	def boundary_eq(self, *args):
+		if self.approximate_boundary == '1lvl':
+			return self.boundary_eq_1lvl(*args)
+		if self.approximate_boundary == '2lvl':
+			return self.boundary_eq_2lvl(*args)
 
-def Liebmann_method(self):
+	def boundary_eq_1lvl(u, b_cond, h):
+		"""For x/y independency"""
+		alpha = b_cond[0]
+		beta  = b_cond[1]
+		phi   = b_cond[2]
+		
+		koef = (beta*h - alpha)
+		
+		return [0.0] + [(phi(i*h) * h - u[i]) / koef for i in range(1, N-1)] + [0.0]
+	
+	def boundary_eq_2lvl(self, u, b_cond, a, b, f):
+		"""For x/y independency"""
+		alpha = b_cond[0]
+		beta  = b_cond[1]
+		phi   = b_cond[2]
+		N = len(u)
+		h = self.h
+		coef_x = self.coef_x
+		
+		res = [0.0]*N
+		res[1:-1] = self.threads_pool.map(
+			 lambda i, u: (phi(i*h) + alpha*u[i] +
+		                   alpha/(a*h) * (b*scalar(coef_x, u[i-1:i+2]) - alpha*f(i*h))) /
+		                  (alpha + beta), [(i,u) for i in range(1, N-1)])
+		return res
+
+	def Zeidel_method(self):
+		"""Just solve equation"""
+		U = deepcopy(self.grid[-1])
+		N = self.N
+		M = self.M
+		h = self.h
+		l = self.l
+		
+		tmp = [U[1][j] for j in range(M)] 
+		top = boundary_eq(tmp, self.north, self.u_yy, self.u_xx, lambda z:f(z,0))
+		tmp = [U[i][1] for i in range(N)]
+		left = boundary_eq(tmp, self.west, self.u_xx, self.u_yy, lambda z:f(0,z))
+		for j in range(1, M-1):
+			U[0][j] = top[j]
+		for i in range(1, N-1):
+			U[i][0] = left[i]
+		
+		# U[i][j-1], U[i-1][j] takes from this iteration
+		# U[i+1][j], U[i][j+1] takes from last iteration
+		for j in range(1, M-1):
+			for i in range(1, N-1):
+				U1[i,j] = (U[i][j-1] + U[i-1][j] + U[i+1][j] + U[i][j+1] - h*h*f(i*h, j*h)) / 4
+		
+		tmp = [U1[-2][j] for j in range(M)] 
+		footer = boundary_eq(tmp, self.south, self.u_yy, self.u_xx, lambda z:f(z,0))
+		tmp = [U[i][-2] for i in range(N)]
+		right = boundary_eq(tmp, self.east, self.u_xx, self.u_yy, lambda z:f(0,z))
+		for j in range(1, M-1):
+			U[-1][j] = footer[j]
+		for i in range(1, N-1):
+			U[i][-1] = right[i]
+
+	def Liebmann_method(self, method = "Liebmann"):
 		"""Just solve equation"""
 		U = self.grid[-1]
 		N = len(U)
 		M = len(U[0])
 		h = self.h
+		l = self.l
 		
-		U = [[1/4 * (U[i][j-1] + U[i-1][j] + U[i+1][j] + U[i][j+1] - h*h*f(i*h, j*h))
+		U = [[(U[i][j-1] + U[i-1][j] + U[i+1][j] + U[i][j+1] - h*h*f(i*h, j*h)) / 4
 			  for j in range(1, M-1)]
 			  for i in range(1, N-1)]
 		
-		#!solve boundary conditions here! 
+		#solve boundary conditions here!
 		
-		
-		
-		if self.coef_t[2] != 0:  # means that time has 2lvl
-			U1 = self.grid[-2]
-		else:
-			U1 = [0] * N
-		
-		#TODO f(x,t) != 0
-
-#		print(list(zip(* [self.coef_a, self.coef_b, self.coef_c])))		
-#		print_vec(coefficients)
-#		print([self.sigma, self.omega, self.eta])
-		
-		res = [0]*N
-		res[1:-1] = self.threads_pool.map(PDE.explicit_fun,
-		                        [(coeff,coef_t,U0,U1,i) for i in range(1, N-1)])
-
-
-
-		(a0, b0, c0, d0) = self.first_eq(self.tau*N)
-		(an, bn, cn, dn) = self.last_eq(self.tau*N)
-		
-		res[0]  = (d0 - c0*res[1])  / b0
-		res[-1] = (dn - an*res[-2]) / bn
+		U[0] = boundary_eq(U[1], self.north, self.u_yy, self.u_xx, lambda z:f(z,0))
+		U[-1] = boundary_eq(U[-2], self.south, self.u_yy, self.u_xx, lambda z:f(z,l))
+		U = zip(*U) #transponate
+		U[0] = boundary_eq(U[1], self.west, self.u_xx, self.u_yy, lambda z:f(0,z))
+		U[-1] = boundary_eq(U[-2], self.east, self.u_xx, self.u_yy, lambda z:f(l,z))
+		U = zip(*U) #transponate
 	
-		return res
+	def estimate_error(self):
+		U0 = self.grid[-1]
+		U1 = self.grid[-2]
+		
+		eps = max(max(abs(e0-e1) for e0,e1 in zip(v0,v1))
+		                         for v0,v1 in zip(U0,U1))
+		return eps
 	
+	def solve(self, method = 'Liebmann'):
+		"""Description"""
+		self.grid = [[0.0]*self.M for i in range(self.N)]
+		Us = [self.grid]
+		count = 0
+		if method == 'Liebmann':
+			while self.estimate_error() > self.eps and count < 7:
+				Us.append(self.Liebmann_method())
+				count += 1
+		elif method == 'Zeidel':
+			while self.estimate_error() > self.eps and count < 7:
+				Us.append(self.Zeidel_method())
+				count += 1
+		elif method == 'Relax':
+			pass
+		print("complete")
+		return Us
 	
 	
 	
