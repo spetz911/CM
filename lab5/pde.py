@@ -1,5 +1,15 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
+###-------------------------------------------------------------------
+### File    : pde.py
+### Author  : Oleg Baskakov
+### Description : Partial Differencial Equation
+###
+### 2011. Written for Moscow Aviation Institute.
+###-------------------------------------------------------------------
+
+
+##TODO Successive Over Relaxation!!!
 
 from math import sqrt,sin,cos,tan,pi,log,exp,sqrt
 from copy import copy, deepcopy
