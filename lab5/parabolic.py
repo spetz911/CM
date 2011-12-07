@@ -73,18 +73,28 @@ class Parabolic_PDE(PDE):
 		return (an, bn, cn, dn)
 
 	def check_scheme(self):
-		N = self.N
+		N = len(self.grid[-1])
 		h = self.h
 		tau = self.tau
-		u = self.orig
+		u = self.res_fun
 		
-		for j in range(0, T):
-			fu = [u(i*h, tau*j) for i in range(1, N-1)]
-			
+		# check init conditions
 		
-		max(   for i in  )
+#		for j in range(0, T):
+#			fu = [u(i*h, tau*j) for i in range(1, N-1)]
 		
+		step = 1
 		
+		f0 = [u(i*h, tau*(step-1)) for i in range(0, N)]
+		f1 = [u(i*h, tau*step) for i in range(0, N)]
+		
+		# check that u_t = a*u_xx
+		errs = [abs((-f1[i]+f0[i]) +
+		              self.u_xx * PDE.scalar(f1[i-1:i+2], self.coef_a) * tau / h**2 +
+		              self.u_x  * PDE.scalar(f1[i-1:i+2], self.coef_b) * tau /(2*h) +
+		              self.u * tau * f1[i] + self.fun(i*h, tau)*tau) for i in range(1, N-1)]
+
+		return errs
 
 
 

@@ -8,6 +8,7 @@
 ### 2011. Written for Moscow Aviation Institute.
 ###-------------------------------------------------------------------
 
+import sys
 from tridiagonal import *
 from pde import *
 from parabolic import *
@@ -46,20 +47,29 @@ def parse_file(f):
 #=====================================================================
 
 def main():
-
-	f = open("input_e")
+	if len(sys.argv) < 2: print("please enter test")
+	path = sys.argv[1]
+	
+	f = open(path)
 	pde = parse_file(f)
 	f.close()
 
 #	print(pde.left[2](0))
 #	print(pde.right[2](0))
 	
-	res = pde.solve('implicit')
-	grid = list(frange(0, pde.l, pde.h))
-	origin = [[pde.fun(x,k*pde.tau) for x in grid]
-									for k in range(4)]
+	errs = pde.check_scheme()
+	print("err full analitic solve ->", max(errs))
+#	print_vec(errs)
 	
-	for k in [0,1,2,3]:
+	
+	res = pde.solve('explicit')
+	grid = list(frange(0, pde.l, pde.h))
+	origin = [[pde.res_fun(x,k*pde.tau) for x in grid]
+									for k in range(8)]
+	
+	
+	
+	for k in range(8):
 		print("iter ", k)
 		print_vec(res[k])
 		print_vec(origin[k])
@@ -77,5 +87,4 @@ def main():
 
 if __name__ == "__main__":
 	main()
-
 

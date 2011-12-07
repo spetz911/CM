@@ -67,11 +67,9 @@ class PDE:
 			MetaClass.copy(self, pde)
 		else:
 			pass
-		self.pool = Pool(processes=4)
+		self.threads_pool = Pool(processes=4)
 		self.set_equation_params()
 		self.initial_cond_lvl0()
-		
-		print("GGG ", self.grid)
 
 		# means that time has tau**2
 		if self.coef_t[2] != 0:
