@@ -1,0 +1,12 @@
+u_tt = 9*u_xx
+u(0,t) = -sin(3*t)
+u(l,t) = sin(3*t)
+u(x,0) = sin(x)
+u_t(x,0) = -3*cos(x)
+l = 3.141592653589793
+tau = 0.005
+T = 0.02
+w = 0
+h = 0.31415926536
+result = sin(x - 3*t)
+method = explicit

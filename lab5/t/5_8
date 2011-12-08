@@ -1,0 +1,12 @@
+u_t = 7*u_xx + -3*u
+u_x(0,t) = exp(-10*t)
+u(l,t) = exp(-10*t)
+u(x,0) = sin(x)
+l = 1.5707963267948966
+tau = 0.01
+T = 0.1
+w = 0
+h = 0.07853981634
+result = exp(-10*t)*sin(x)
+approximate_boundary = 2lvl
+method = explicit

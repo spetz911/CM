@@ -1,0 +1,10 @@
+u_t = 7*u_xx
+u(0,t) = 0
+u(l,t) = 0
+u(x,0) = sin(2*pi*x)
+l = 1.0
+tau = 0.002
+T = 0.02
+w = 0
+h = 0.1
+result = exp(-4*pi*pi*7*t)*sin(2*pi*x)

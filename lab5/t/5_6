@@ -1,0 +1,10 @@
+u_t = u_xx + cos(x)*(cos(t) + sin(t))
+u(0,t) = sin(t)
+u_x(l,t) = -sin(t)
+u(x,0) = 0
+l = 1.5707963267948966
+tau = 0.05
+T = 0.2
+w = 0
+h = 0.1
+result = sin(t)*cos(x)

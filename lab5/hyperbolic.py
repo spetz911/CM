@@ -31,7 +31,7 @@ class Hyperbolic_PDE(PDE):
 	coef_t = [+1, -2, +1]
 	
 	def __init__(self, pde = None):
-		super(Parabolic_PDE, self).__init__(pde)
+		super(Hyperbolic_PDE, self).__init__(pde)
 		MetaClass.print(self)
 
 

@@ -1,0 +1,11 @@
+u_t = 1*u_xx
+u_x(0,t) = exp(-1*t)
+u_x(l,t) = exp(-1*t)
+u(x,0) = sin(x)
+l = 3.141592653589793
+tau = 0.05
+T = 0.5
+w = 0
+h = 0.31415926536
+result = exp(-1*t)*sin(x)
+approximate_boundary = 1lvl

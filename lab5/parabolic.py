@@ -18,9 +18,6 @@ from pprint import pprint
 from pde import *
 
 class Parabolic_PDE(PDE):
-	approximate_init = '1lvl'
-	approximate_boundary = '1lvl'
-	
 	u_x = 0.0
 	u = 0.0
 	coef_t = [+1, -1, +0]
@@ -29,6 +26,9 @@ class Parabolic_PDE(PDE):
 	coef_c = [+0, +1, +0]
 	
 	def __init__(self, pde = None):
+		self.method = 'explicit'
+		self.approximate_init = '1lvl'
+		self.approximate_boundary = '1lvl'
 		super(Parabolic_PDE, self).__init__(pde)
 		MetaClass.print(self)
 
@@ -72,29 +72,6 @@ class Parabolic_PDE(PDE):
 		dn = alpha * (U[-1] * h/tau) + phi1(t) * (2*a*a + b*h)
 		return (an, bn, cn, dn)
 
-	def check_scheme(self):
-		N = len(self.grid[-1])
-		h = self.h
-		tau = self.tau
-		u = self.res_fun
-		
-		# check init conditions
-		
-#		for j in range(0, T):
-#			fu = [u(i*h, tau*j) for i in range(1, N-1)]
-		
-		step = 1
-		
-		f0 = [u(i*h, tau*(step-1)) for i in range(0, N)]
-		f1 = [u(i*h, tau*step) for i in range(0, N)]
-		
-		# check that u_t = a*u_xx
-		errs = [abs((-f1[i]+f0[i]) +
-		              self.u_xx * PDE.scalar(f1[i-1:i+2], self.coef_a) * tau / h**2 +
-		              self.u_x  * PDE.scalar(f1[i-1:i+2], self.coef_b) * tau /(2*h) +
-		              self.u * tau * f1[i] + self.fun(i*h, tau)*tau) for i in range(1, N-1)]
-
-		return errs
 
 
 

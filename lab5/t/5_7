@@ -1,0 +1,10 @@
+u_t = u_xx + 0.5*exp(-0.5*t)*cos(x)
+u_x(0,t) = exp(-0.5*t)
+u_x(l,t) = -exp(-0.5*t)
+u(x,0) = sin(x)
+l = 3.141592653589793
+tau = 0.005
+T = 0.02
+w = 0
+h = 0.1
+result = exp(-0.5*t)*sin(x)
