@@ -129,12 +129,16 @@ class PDE:
 	def first_eq(self, t):
 		if self.approximate_boundary == '1lvl':
 			return self.first_eq_1lvl(t)
+		if self.approximate_boundary == '1lvl2p':
+			return self.first_eq_1lvl2p(t)
 		if self.approximate_boundary == '2lvl':
 			return self.first_eq_2lvl(t)
 		
 	def last_eq(self, t):
 		if self.approximate_boundary == '1lvl':
 			return self.last_eq_1lvl(t)
+		if self.approximate_boundary == '1lvl2p':
+			return self.last_eq_1lvl2p(t)
 		if self.approximate_boundary == '2lvl':
 			return self.last_eq_2lvl(t)
 
@@ -164,14 +168,51 @@ class PDE:
 		d0 = phi1(t)
 		return (a0, b0, c0, d0)
 
+	def first_eq_1lvl2p(self, t):
+		"""Find coefficients of first equation"""
+		alpha = self.left[0]
+		beta  = self.left[1]
+		phi0  = self.left[2]
+		h = self.h
+		
+		a0 = -3 * alpha / (2*h) + beta
+		b0 = 2*alpha / h
+		c0 = -alpha / (2*h)
+		d0 = phi0(t)
+		# here we swap c0 && b0 && a0, because it's first equation shr 1
+		return (c0, a0, b0, d0)
 
+	def last_eq_1lvl2p(self, t):
+		"""Find coefficients of first equation"""
+		alpha = self.right[0]
+		beta  = self.right[1]
+		phi1  = self.right[2]
+		h = self.h
+		
+		an = alpha / (2*h)
+		bn = -2*alpha / h
+		cn = 3 * alpha / (2*h) + beta
+		dn = phi1(t)
+		# here we swap cn && bn && an, because it's first equation shl 1
+		return (bn, cn, an, dn)
+	
+	@staticmethod
+	def correct_eq(Eq):
+		#combine Eq[0] && Eq[1] for ci -> 0
+		if abs(Eq[1][2]) > 0.0001:
+			k0 = Eq[0][2] / Eq[1][2]
+			Eq[0] = [(u - k0*v) for u,v in zip(Eq[0], Eq[1])]
+			print("correct =", Eq[0])
+		#combine Eq[-1] && Eq[-2] for ai -> 0
+		if abs(Eq[-2][2]) < 0.0001:
+			kn = Eq[-1][2] / Eq[-2][2]
+			Eq[-1] = [(u - k0*v) for u,v in zip(Eq[-1], Eq[-2])]
 
 # if __name__ == '__main__':
 #    pool = Pool(processes=4)              # start 4 worker processes
 #    result = pool.apply_async(f, [10])     # evaluate "f(10)" asynchronously
 #    print(result.get(timeout=1))           # prints "100" unless your computer is very slow
 #    print())          # prints "[0, 1, 4,..., 81]"
-
 
 
 	@staticmethod
@@ -186,7 +227,7 @@ class PDE:
 		"""Just solve equation"""
 		U0 = self.grid[-1]
 		N = len(U0)
-		k = len(self.grid)
+		k = len(self.grid) # maybe -1??
 		coeff = self.coeff
 		coef_t = self.coef_t
 		
@@ -209,8 +250,10 @@ class PDE:
 		(a0, b0, c0, d0) = self.first_eq(self.tau*k)
 		(an, bn, cn, dn) = self.last_eq(self.tau*k)
 		
-		res[0]  = (d0 - c0*res[1])  / b0
-		res[-1] = (dn - an*res[-2]) / bn
+	#	print((a0, b0, c0, d0), (an, bn, cn, dn))
+		
+		res[0]  = (d0 - c0*res[1] - a0*res[2])  / b0
+		res[-1] = (dn - an*res[-2] - cn*res[-3]) / bn
 	
 		return res
 
@@ -218,13 +261,13 @@ class PDE:
 		"""Solve with method Progonki"""
 		U = self.grid[-1]
 		N = len(U)
-		t = self.tau*N
+		k = len(self.grid) # maybe -1??
+		t = self.tau*k
 		coef_t = self.coef_t
 		if coef_t[2] != 0:  # means that time has 2lvl
 			U1 = self.grid[-2]
 		else:
 			U1 = [0] * N
-		
 		
 		M = Tridiagonal_Matrix()
 		
@@ -236,6 +279,11 @@ class PDE:
 			        coef_t[1] * U[i] + coef_t[2] * U1[i])
 			                       for i in range(1, N-1)])
 		Eq.append(self.last_eq(t))
+		
+		print(Eq[0], Eq[-1])
+		
+		if self.approximate_boundary == '1lvl2p':
+			PDE.correct_eq(Eq)
 		
 		[M.a,M.b,M.c,M.d] = list(zip(* Eq))
 		M.n = N
@@ -256,7 +304,8 @@ class PDE:
 			U1 = [0] * N
 
 		N = len(self.grid[-1])
-		t = self.tau*N
+		k = len(self.grid) # maybe -1??
+		t = self.tau*k
 		Eq = []
 		Eq.append(self.first_eq(t))
 		for i in range(1, N-1):
@@ -270,6 +319,9 @@ class PDE:
 			eq = Impl[0], Impl[1], Impl[2], Impl[3] - Expl
 			Eq.append(eq)
 		Eq.append(self.last_eq(t))
+		
+		if self.approximate_boundary == '1lvl2p':
+			PDE.correct_eq(Eq)
 
 		M = Tridiagonal_Matrix()
 		
@@ -281,7 +333,7 @@ class PDE:
 		x = M.solve()
 		return x
 
-	def solve(self, method = 'Crank_Nicolson'):
+	def solve(self, method = 'crank_nicolson'):
 		"""Description"""
 		Us = self.grid
 		if method == 'explicit':
@@ -290,10 +342,12 @@ class PDE:
 		elif method == 'implicit':
 			for t in frange(0, self.t, self.tau):
 				Us.append(self.implicit_method())
-		elif method == 'Crank_Nicolson':
+		elif method == 'crank_nicolson':
 			for t in frange(0, self.t, self.tau):
 				Us.append(self.Crank_Nicolson_method(0.5))
-		
+		else:
+			print("unknown method", method)
+			return None
 		print("complete")
 		return Us
 
@@ -312,13 +366,14 @@ class PDE:
 		f_1 = [0.0] * N 
 		f0 = [u(i*h, tau*(step-1)) for i in range(0, N)]
 		f1 = [u(i*h, tau*step) for i in range(0, N)]
-		
+
 		# check that u_t = a*u_xx
-		errs = [abs(  PDE.scalar(f1[i-1:i+2], self.coef_t) +
-		              self.u_xx * PDE.scalar(f1[i-1:i+2], self.coef_a) * self.sigma +
-		              self.u_x  * PDE.scalar(f1[i-1:i+2], self.coef_b) * self.sigma +
-		              self.u    * PDE.scalar(f1[i-1:i+2], self.coef_c) * self.eta   +
-		              self.fun(i*h, tau)*self.eta) for i in range(1, N-1)]
+		errs = [abs(  # PDE.scalar([f0[i], f1[i], 0.0], self.coef_t) +
+		              f0[i] - f1[i] +
+		              PDE.scalar(f1[i-1:i+2], self.coef_a) * self.sigma +
+		              PDE.scalar(f1[i-1:i+2], self.coef_b) * self.omega +
+		              PDE.scalar(f1[i-1:i+2], self.coef_c) * self.eta   +
+		              self.fun(i*h, tau)*self.tau) for i in range(1, N-1)]
 		
 		alpha = self.left[0]
 		beta = self.left[1]

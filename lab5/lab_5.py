@@ -59,6 +59,7 @@ def main():
 	
 	errs, b1, b2 = pde.check_scheme()
 	print("err full analitic solve ->", max(errs))
+	print_vec(errs)
 	print("err bound1 ->")
 	print_vec(b1)
 	print("err bound2 ->")
@@ -66,6 +67,7 @@ def main():
 
 #	print_vec(errs)
 	
+
 #	res = pde.solve('explicit')
 	res = pde.solve(pde.method)
 	grid = list(frange(0, pde.l, pde.h))
@@ -76,6 +78,12 @@ def main():
 		print("iter ", k)
 		print_vec(res[k])
 		print_vec(origin[k])
+	
+	print("SIGMA =", pde.a**2 * pde.tau / pde.h**2)
+	err1 = max([abs(u-v) for u,v in zip(res[-1], origin[-1])])
+	print("ERR_1 =", err1)
+	err2 = (sum([abs(u-v)**2 for u,v in zip(res[-1], origin[-1])]) / len(res[-1]))**0.5
+	print("ERR_2 =", err2)
 	
 	f = open("result", 'w')
 	f.write(str({'result':res, 'origin':origin, 'grid':grid}))
