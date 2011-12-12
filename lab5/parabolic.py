@@ -40,7 +40,7 @@ class Parabolic_PDE(PDE):
 		phi0  = self.left[2]
 		U = self.grid[-1]
 		
-		a = self.u_xx
+		a = self.u_xx #XXX sqrt here
 		b = self.u_x
 		c = self.u
 		h = self.h
@@ -60,7 +60,7 @@ class Parabolic_PDE(PDE):
 		U = self.grid[-1]
 		N = len(U)
 
-		a = self.u_xx
+		a = self.u_xx #XXX sqrt here
 		b = self.u_x
 		c = self.u
 		h = self.h

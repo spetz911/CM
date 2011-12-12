@@ -66,7 +66,6 @@ class PDE:
 			MetaClass.copy(self, pde)
 		else:
 			pass
-		self.threads_pool = Pool(processes=4)
 		self.set_equation_params()
 		self.initial_cond_lvl0()
 
@@ -77,12 +76,11 @@ class PDE:
 		if self.approximate_init == '2lvl' and self.coef_t[2] != 0:
 			self.initial_cond_lvl2()
 		
-			
 		self.coeff = PDE.vec_mat([self.sigma, self.omega, self.eta],
                                  [self.coef_a, self.coef_b, self.coef_c])
 
 	def set_equation_params(self):
-		self.a = sqrt(self.u_xx)
+		self.a = sqrt(self.u_xx) #XXX sqrt here??
 		self.b = self.u_x
 		self.c = self.u
 		
@@ -230,6 +228,9 @@ class PDE:
 		k = len(self.grid) # maybe -1??
 		coeff = self.coeff
 		coef_t = self.coef_t
+		fun = self.fun
+		tau = self.tau
+		h = self.h
 		
 		if self.coef_t[2] != 0:  # means that time has 2lvl
 			U1 = self.grid[-2]
@@ -243,12 +244,16 @@ class PDE:
 #		print([self.sigma, self.omega, self.eta])
 		
 		res = [0]*N
-		# self.threads_pool.
-		res[1:-1] = map(PDE.explicit_fun,
-		                        [(coeff,coef_t,U0,U1,i) for i in range(1, N-1)])
 
-		(a0, b0, c0, d0) = self.first_eq(self.tau*k)
-		(an, bn, cn, dn) = self.last_eq(self.tau*k)
+		for i in range(1, N-1):
+			z  = PDE.scalar(coeff, U0[i-1:i+2])
+			z -= coef_t[1] * U0[i]
+			z -= coef_t[2] * U1[i]
+			z += fun(i*h, (k-1)*tau) * tau
+			res[i] = z
+
+		(a0, b0, c0, d0) = self.first_eq(tau*k)
+		(an, bn, cn, dn) = self.last_eq(tau*k)
 		
 	#	print((a0, b0, c0, d0), (an, bn, cn, dn))
 		
@@ -263,6 +268,9 @@ class PDE:
 		N = len(U)
 		k = len(self.grid) # maybe -1??
 		t = self.tau*k
+		fun = self.fun
+		tau = self.tau
+		h = self.h
 		coef_t = self.coef_t
 		if coef_t[2] != 0:  # means that time has 2lvl
 			U1 = self.grid[-2]
@@ -276,7 +284,7 @@ class PDE:
 		Eq.extend([(teta * self.coeff[0],
 			        teta * self.coeff[1] - coef_t[0],
 			        teta * self.coeff[2],
-			        coef_t[1] * U[i] + coef_t[2] * U1[i])
+			        coef_t[1] * U[i] + coef_t[2] * U1[i] +  0*fun(i*h, (k-1)*tau) * tau)
 			                       for i in range(1, N-1)])
 		Eq.append(self.last_eq(t))
 		
@@ -305,7 +313,10 @@ class PDE:
 
 		N = len(self.grid[-1])
 		k = len(self.grid) # maybe -1??
-		t = self.tau*k
+		fun = self.fun
+		tau = self.tau
+		h = self.h
+		t = tau*k
 		Eq = []
 		Eq.append(self.first_eq(t))
 		for i in range(1, N-1):
@@ -314,7 +325,7 @@ class PDE:
 			Impl = (teta * self.coeff[0],
 			        teta * self.coeff[1] - coef_t[0],
 			        teta * self.coeff[2],
-			        coef_t[1] * U[i] + coef_t[2] * U1[i])
+			        coef_t[1] * U[i] + coef_t[2] * U1[i] - 0*fun(i*h, (k-1)*tau) * tau)
 			
 			eq = Impl[0], Impl[1], Impl[2], Impl[3] - Expl
 			Eq.append(eq)
@@ -352,6 +363,7 @@ class PDE:
 		return Us
 
 	def check_scheme(self):
+		""" GSOM GSOM """
 		N = len(self.grid[-1])
 		h = self.h
 		tau = self.tau

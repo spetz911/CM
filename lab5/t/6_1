@@ -9,4 +9,5 @@ T = 0.02
 w = 0
 h = 0.31415926536
 result = sin(x - 3*t)
-method = explicit
+method = implicit
+approximate_boundary = 2lvl

@@ -8,5 +8,5 @@ T = 0.07
 w = 0
 h = 0.07853981634
 result = exp(-5*t)*sin(x)
-approximate_boundary = 1lvl2p
+approximate_boundary = 2lvl
 method = Crank_Nicolson
