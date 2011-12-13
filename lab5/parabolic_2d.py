@@ -17,9 +17,11 @@ from pprint import pprint
 
 from pde import *
 
-class ADI_solver(PDE):
+class Parabolic_2d_PDE(PDE):
+	"""ADI_solver"""
 	approximate_init = '1lvl'
 	approximate_boundary = '1lvl'
+	method = 'adi'
 	
 	u_x = 0.0
 	u = 0.0
@@ -29,8 +31,20 @@ class ADI_solver(PDE):
 	coef_c = [+0, +1, +0]
 	
 	def __init__(self, pde = None):
-		super(Parabolic_PDE, self).__init__(pde)
+		super(Parabolic_2d_PDE, self).__init__(pde)
+		tmp = self.grid
+		self.grid = None
 		MetaClass.print(self)
+		self.grid = tmp
+
+
+
+	def initial_cond_lvl0(self):
+		"""qqq"""
+		psi0 = self.initial0
+		self.grid = []
+		self.grid.append([[psi0(x,y) for x in frange(0, self.lx, self.h)]
+		                             for y in frange(0, self.ly, self.h)])
 
 	
 	def first_eq_2lvl(self, t):
@@ -73,78 +87,190 @@ class ADI_solver(PDE):
 		return (an, bn, cn, dn)
 
 
-	def solve_dim():
+	def solve_dim(self, field, t):
 		"""Solver for one dimension"""
 		res_x = []
 		
 		N = len(field)
 		M = len(field[0])
+		h = self.h
 		
+		teta = 1.0
+		coef_t = self.coef_t
+		
+		print("TEST:")
+		print_mat(field)
+		
+		res_x.append(field[0])
 		for i in range(1, N-1):
 			Eq = []
-			Eq.append(self.first_eq(t))
+			Eq.append(self.__first_eq(i*h, t))
 			
 			for j in range(1, M-1):
-				
+				U = field[j]
 				# eta = c*u + f(x,t)
-				eta = scalar(self.coef_a, field[i-1:i+2][j]) + self.tau * self.c # TODO add f(x,t)
+				tmp = (field[i-1][j],field[i][j],field[i+1][j])
+				eta = PDE.scalar(self.coef_a, tmp) + self.tau * self.c
+				# TODO add f(x,t)
 				coeff = PDE.vec_mat([self.sigma, self.omega, self.eta],
                                      [self.coef_a, self.coef_b, self.coef_c])
 				Eq.append((teta * self.coeff[0],
 			        teta * self.coeff[1] - coef_t[0],
 			        teta * self.coeff[2],
-			        coef_t[1] * U[i] + coef_t[2] * U1[i]))
+			        coef_t[1] * U[j] ))
 			
-			Eq.append(self.last_eq(t))
+			Eq.append(self.__last_eq(i*h, t))
 		
-			[M.a,M.b,M.c,M.d] = list(zip(* Eq))
-			M.n = N
+			Matrix = Tridiagonal_Matrix()
+			[Matrix.a, Matrix.b, Matrix.c, Matrix.d] = list(zip(* Eq))
+			Matrix.n = M
 	
 			#	print_mat(Eq)
-			x = M.solve()
+			x = Matrix.solve()
 			res_x.append(x)
+
+		res_x.append(field[-1])
 			
-			res_x.append(implicit_method())
+		return res_x
+#			res_x.append(implicit_method())
 		
 
 ##====================================================================================
-	def solve(self, method = 'ADI'):
+	def solve_adi(self, t):
 		"""Alternating direction implicit method"""
-		self.tau /= 2
-		#need division here?
-		for t in frange(0, self.t, self.tau):
 
-			field = self.field[-1]
-
-			new_field_x = solve_dim(field)
+		print("true fuction!")
 		
-			field = [list(x) for x in zip(*field)]
-		
-			new_field_y = solve_dim(field)
-		
-		self.tau *= 2
-		return new_field_y
-
-
-	def solve(self, method = 'FS'):
-		"""fractional step method"""
-		self.tau /= 2
 		#need division here?
 		
-		for t in frange(0, self.t, self.tau):
-			field_x = self.field[-1]
-			new_field = []
-			for self.grid in field:
-				new_field.append(self.implicit_method())
-			field_y = zip(*new_field)
-			new_field = []
-			for self.grid in field:
-				new_field.append(self.implicit_method())
-			self.field.append(new_field)
 		
-		self.tau *= 2
+
+		field = self.grid[-1]
+
+		self.left = self.west
+		self.right = self.east
+		new_field_x = self.solve_dim(field,t+self.tau)
+
+		print("after")
+		print_mat(new_field_x)
+
+
+		#transpose
+		field = [list(x) for x in zip(*new_field_x)]
+
+		self.left = self.south
+		self.right = self.north
+		new_field_y = self.solve_dim(field, t + 2*self.tau)
 		
-		return self.field
+		return [list(x) for x in zip(*new_field_y)]
+
+
+	def __first_eq(self, z, t):
+		"""Find coefficients of first equation"""
+		alpha = self.left[0]/self.tau
+		beta  = self.left[1]
+		phi0  = self.left[2]
+		h = self.h
+		
+		a0 = 0
+		b0 = beta - alpha / h
+		c0 = alpha / h
+		d0 = phi0(z,t)
+		print("calltrace")
+		print((a0, b0, c0, d0))
+		
+		return (a0, b0, c0, d0)
+
+	def __last_eq(self, z, t):
+		"""Find coefficients of first equation"""
+		alpha = self.right[0]/self.tau
+		beta  = self.right[1]
+		phi1  = self.right[2]
+		h = self.h
+		
+		a0 = alpha / h
+		b0 = beta - alpha / h
+		c0 = 0
+		d0 = phi1(z,t)
+		return (a0, b0, c0, d0)
+
+
+	def solve_fs(self, t):
+		"""Fractional step method"""
+		#need division here?
+		h = self.h
+		
+		field_x = self.grid[-1]
+		w = self.west
+		e = self.east
+		n = self.north
+		s = self.south
+		tau = self.tau
+		h = self.h
+		
+		# fun(x,y,t)???
+#		print("before")
+#		print_mat(field_x)
+		
+		new_field = []
+		for i, zz in enumerate(field_x):
+			self.left  = (w[0]/tau, w[1], lambda t: w[2](i*h, t))
+			self.right = (e[0], e[1], lambda t: e[2](i*h, t))
+			if (i!=0) and (i!=len(field_x)-1):
+				new_field.append(self.implicit_method(U = zz, t = t))
+			else:
+				new_field.append(zz)
+
+#		print("after")
+#		print_mat(new_field)
+			
+		field_y = [list(x) for x in zip(*new_field)]
+
+
+		new_field = []
+		for i, zz in enumerate(field_y):
+			self.left  = (s[0]/tau, s[1], lambda t: s[2](i*h, t+tau))
+			self.right = (n[0], n[1], lambda t: n[2](i*h, t+tau))
+			
+			if (i!=0) and (i!=len(field_y)-1):
+				new_field.append(self.implicit_method(U = zz, t = t+tau))
+			else:
+				new_field.append(zz)
+		
+		res = [list(x) for x in zip(*new_field)]
+#		print("after-after")
+#		print_mat(res)
+		
+		return res
+
+	def solve(self, method = 'adi'):
+		"""Description"""
+		self.M = int(self.lx / self.h)
+		self.N = int(self.ly / self.h)
+		self.max = 0
+		tau = self.tau
+		
+	#	self.grid = [[0.0]*self.M for i in range(self.N)]
+		Us = self.grid
+
+		if method == 'adi':
+			one_iteration = self.solve_adi
+		elif method == 'fs':
+			one_iteration = self.solve_fs
+		else:
+			print("method %s not supported" % method)
+			return
+		
+		Us.append(one_iteration(0))
+		count = 2
+		while count * tau > self.t and count < self.max:
+			Us.append(one_iteration((count-1) * tau))
+			print_mat(Us[-1])
+			count += 2
+		self.count = count
+		print("complete")
+		return Us
+
 
 
 

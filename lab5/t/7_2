@@ -1,0 +1,13 @@
+u_xx + u_yy = 0
+u_x(0,y) = 0
+u(lx,y) = 1 - y*y
+u_y(x,0) = 0
+u(x,ly) = x*x - 1
+lx = 1.0
+ly = 1.0
+h = 0.1
+result = x*x - y*y
+method = zeidel
+w = 1.5
+eps = 0.0001
+max = 117

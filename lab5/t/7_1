@@ -1,0 +1,10 @@
+u_xx + u_yy = 0
+u(0,y) = y
+u(lx,y) = 1+y
+u(x,0) = x
+u(x,ly) = 1+x
+lx = 1.0
+ly = 1.0
+h = 0.1
+result = x + y
+method = liebmann

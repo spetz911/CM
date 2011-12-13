@@ -262,12 +262,22 @@ class PDE:
 	
 		return res
 
-	def implicit_method(self, teta = 1):
+	def implicit_method(self, teta = 1, U = None, t = None):
 		"""Solve with method Progonki"""
-		U = self.grid[-1]
+		if not U:
+			U = self.grid[-1]
+		if not t:
+			k = len(self.grid)
+			t = self.tau*k
+		else:
+			k = int(t/self.tau)
+		
+#		print("call trace")
+#		print_vec(U)
+		
 		N = len(U)
-		k = len(self.grid) # maybe -1??
-		t = self.tau*k
+		 # maybe -1??
+
 		fun = self.fun
 		tau = self.tau
 		h = self.h
@@ -288,7 +298,7 @@ class PDE:
 			                       for i in range(1, N-1)])
 		Eq.append(self.last_eq(t))
 		
-		print(Eq[0], Eq[-1])
+	#	print(Eq[0], Eq[-1])
 		
 		if self.approximate_boundary == '1lvl2p':
 			PDE.correct_eq(Eq)

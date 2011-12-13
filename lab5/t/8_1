@@ -1,0 +1,14 @@
+u_t = u_xx + u_yy
+u_x(0,y) = cos(y)*exp(-2*t)
+u(lx,y) = -cos(y)*exp(-2*t)
+u_y(x,0) = cos(x)*exp(-2*t)
+u(x,ly) = -cos(x)*exp(-2*t)
+u(x,y,0) = cos(x)*cos(y)
+lx = 3.141592653589793
+ly = 3.141592653589793
+# h = 0.15707963267948966
+h = 0.314
+tau = 0.05
+T = 1.0
+result = cos(x)*cos(y)*exp(-2*t)
+method = FS
