@@ -132,7 +132,7 @@ class Matrix:
 		
 	def build_LU(self):
 		n = self.n
-		A = Matrix()
+		A = Matrix("", n, n)
 		A.M = deepcopy(self.M)
 		A.n = self.n
 		self.p = [x for x in range(n)]
