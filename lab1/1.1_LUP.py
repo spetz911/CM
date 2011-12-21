@@ -101,7 +101,7 @@ class Matrix:
 			self[j][k] = self[j][s]
 			self[j][s] = z
 			
-		
+
 	def build_LU(self):
 		n = self.n
 		A = Matrix()

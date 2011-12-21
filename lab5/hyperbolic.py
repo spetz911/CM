@@ -50,8 +50,6 @@ class Hyperbolic_PDE(PDE):
 		h = self.h
 		tau = self.tau
 		
-		print("I'm here!!")
-		
 		a0 = 0.0
 		b0 = alpha*(-2*a / (h*(2*a-b*h)) - h/(2*a-b*h) + c*h / (2*a-b*h)) + beta;
 		c0 = alpha*(2*a) / (h*(2*a-b*h))

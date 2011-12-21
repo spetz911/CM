@@ -22,6 +22,18 @@ def main():
 	except:
 		k = 0
 	
+	if len(sys.argv) <= 1:
+		f = open("result")
+		dd = eval(f.read())
+		Y = dd['tmp']
+		X = list(range(len(Y)))
+		plt.plot(X, Y, color="black")
+		plt.show()
+		return
+	
+	
+	
+	
 	print("k =", k)
 
 	f = open("result")

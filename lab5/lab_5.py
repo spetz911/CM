@@ -67,14 +67,15 @@ def main():
 
 #	print_vec(errs)
 	
-
+	
 #	res = pde.solve('explicit')
 	res = pde.solve(pde.method)
+	count = len(res)
 	grid = list(frange(0, pde.l, pde.h))
 	origin = [[pde.res_fun(x,k*pde.tau) for x in grid]
-									for k in range(6)]
+									for k in range(count)]
 	
-	for k in range(6):
+	for k in range(5):
 		print("iter ", k)
 		print_vec(res[k])
 		print_vec(origin[k])
@@ -85,8 +86,12 @@ def main():
 	err2 = (sum([abs(u-v)**2 for u,v in zip(res[-1], origin[-1])]) / len(res[-1]))**0.5
 	print("ERR_2 =", err2)
 	
+	tmp = []
+	for us,vs in zip(res, origin):
+		tmp.append(max([abs(u-v) for u,v in zip(us,vs)]))
+	
 	f = open("result", 'w')
-	f.write(str({'result':res, 'origin':origin, 'grid':grid}))
+	f.write(str({'result':res, 'origin':origin, 'grid':grid, 'tmp' : tmp, 't' : pde.t, 'tau':pde.tau}))
 #	f.write("\n")
 	f.close()
 	

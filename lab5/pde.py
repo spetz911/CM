@@ -200,7 +200,7 @@ class PDE:
 		if abs(Eq[1][2]) > 0.0001:
 			k0 = Eq[0][2] / Eq[1][2]
 			Eq[0] = [(u - k0*v) for u,v in zip(Eq[0], Eq[1])]
-			print("correct =", Eq[0])
+#			print("correct =", Eq[0])
 		#combine Eq[-1] && Eq[-2] for ai -> 0
 		if abs(Eq[-2][2]) < 0.0001:
 			kn = Eq[-1][2] / Eq[-2][2]
@@ -365,7 +365,7 @@ class PDE:
 				Us.append(self.implicit_method())
 		elif method == 'crank_nicolson':
 			for t in frange(0, self.t, self.tau):
-				Us.append(self.Crank_Nicolson_method(0.5))
+				Us.append(self.Crank_Nicolson_method(self.w))
 		else:
 			print("unknown method", method)
 			return None

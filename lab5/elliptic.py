@@ -25,6 +25,7 @@ class Elliptic_PDE(PDE):
 	approximate_boundary = '1lvl'
 	method = 'liebmann'
 	eps = 0.1
+	tau = 0.0
 	
 	u_x = 0.0
 	u = 0.0
@@ -238,7 +239,7 @@ class Elliptic_PDE(PDE):
 			print_mat(Us[-1])
 			self.count += 1
 
-		print("complete")
+		print("complete in %d iters" % len(Us))
 		return Us
 
 
