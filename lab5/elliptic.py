@@ -87,7 +87,7 @@ class Elliptic_PDE(PDE):
 
 	def boundary_eq_1lvl(self, u, b_cond, tmp0, tmp1, tmp2):
 		"""For x/y independency"""
-		alpha = b_cond[0]
+		alpha = -b_cond[0]
 		beta  = b_cond[1]
 		phi   = b_cond[2]
 		N = len(u)
@@ -95,10 +95,10 @@ class Elliptic_PDE(PDE):
 
 		koef = (beta - alpha/h)
 		res = [0.0] + [(phi(i*h) - u[i]*alpha/h) / koef for i in range(1, N-1)] + [0.0]
-		print("boundary")
-		print_vec(u)
-		print_vec([0.0] + [phi(i*h) for i in range(1, N-1)] + [0.0])
-		print_vec(res)
+	#	print("boundary")
+	#	print_vec(u)
+	#	print_vec([0.0] + [phi(i*h) for i in range(1, N-1)] + [0.0])
+	#	print_vec(res)
 		return res
 	
 	def boundary_eq_2lvl(self, u, b_cond, a, b, f):
@@ -139,7 +139,7 @@ class Elliptic_PDE(PDE):
 				U[i][j] = 0.25*(U[i][j-1] + U[i-1][j] + U[i+1][j] + U[i][j+1] - h*h * fun(i*h, j*h))
 		
 		#solve boundary conditions here!
-		print_mat(U)
+#		print_mat(U)
 		
 		U[0] = self.boundary_eq(U[1], self.south, self.u_yy, self.u_xx, lambda z:fun(z,0))
 		U[-1] = self.boundary_eq(U[-2], self.north, self.u_yy, self.u_xx, lambda z:fun(z,ly))
@@ -189,7 +189,7 @@ class Elliptic_PDE(PDE):
 
 	def SOR(self):
 		"""Successive over-relaxation"""
-		print('SOR')
+#		print('SOR')
 		w = self.w
 		U0 = self.grid[-1]
 		U1 = self.grid[-2]
@@ -211,9 +211,12 @@ class Elliptic_PDE(PDE):
 	
 	def solve(self, method = 'liebmann'):
 		"""Description"""
-		self.M = int(self.lx / self.h)
-		self.N = int(self.ly / self.h)
-		
+#		self.M = int((self.lx+0.00001) / self.h)
+#		self.N = int((self.ly+0.00001) / self.h)
+
+		self.M = len(list(frange(0, self.lx+0.00001, self.h)))
+		self.N = len(list(frange(0, self.ly+0.00001, self.h)))
+
 		self.grid = [[0.0]*self.M for i in range(self.N)]
 		Us = [self.grid]
 		self.grid = Us
@@ -233,13 +236,14 @@ class Elliptic_PDE(PDE):
 		
 		Us.append(one_iteration())
 		while self.estimate_error() > self.eps and self.count < self.max:
-			print("estimate", self.estimate_error())
+			
 			Us.append(one_iteration())
 			if self.w: self.SOR()
-			print_mat(Us[-1])
+#			print_mat(Us[-1])
 			self.count += 1
 
-		print("complete in %d iters" % len(Us))
+		print("complete in %d iters" % (len(Us)-1))
+		print("estimate", self.estimate_error())
 		return Us
 
 

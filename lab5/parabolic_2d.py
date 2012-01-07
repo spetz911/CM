@@ -31,12 +31,12 @@ class Parabolic_2d_PDE(PDE):
 	coef_c = [+0, +1, +0]
 	
 	def __init__(self, pde = None):
+		self.max = 0
 		super(Parabolic_2d_PDE, self).__init__(pde)
 		tmp = self.grid
 		self.grid = None
 		MetaClass.print(self)
 		self.grid = tmp
-
 
 
 	def initial_cond_lvl0(self):
@@ -98,8 +98,8 @@ class Parabolic_2d_PDE(PDE):
 		teta = 1.0
 		coef_t = self.coef_t
 		
-		print("TEST:")
-		print_mat(field)
+#		print("TEST:")
+#		print_mat(field)
 		
 		res_x.append(field[0])
 		for i in range(1, N-1):
@@ -151,8 +151,8 @@ class Parabolic_2d_PDE(PDE):
 		self.right = self.east
 		new_field_x = self.solve_dim(field,t+self.tau)
 
-		print("after")
-		print_mat(new_field_x)
+#		print("after")
+#		print_mat(new_field_x)
 
 
 		#transpose
@@ -247,7 +247,6 @@ class Parabolic_2d_PDE(PDE):
 		"""Description"""
 		self.M = int(self.lx / self.h)
 		self.N = int(self.ly / self.h)
-		self.max = 0
 		tau = self.tau
 		
 	#	self.grid = [[0.0]*self.M for i in range(self.N)]
@@ -263,9 +262,10 @@ class Parabolic_2d_PDE(PDE):
 		
 		Us.append(one_iteration(0))
 		count = 2
-		while count * tau > self.t and count < self.max:
+		print("self_max =", self.max)
+		while count * tau < self.t and count < self.max:
 			Us.append(one_iteration((count-1) * tau))
-			print_mat(Us[-1])
+#			print_mat(Us[-1])
 			count += 2
 		self.count = count
 		print("complete")
@@ -281,3 +281,4 @@ def main():
 
 if __name__ == "__main__":
 	main()
+

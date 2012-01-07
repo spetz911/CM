@@ -15,7 +15,6 @@ from parabolic import *
 from hyperbolic import *
 from parser import *
 
-
 ##====================================================================
 ## Description: parse all input
 def parse_file(f):
@@ -67,28 +66,35 @@ def main():
 
 #	print_vec(errs)
 	
-	
 #	res = pde.solve('explicit')
 	res = pde.solve(pde.method)
 	count = len(res)
 	grid = list(frange(0, pde.l, pde.h))
 	origin = [[pde.res_fun(x,k*pde.tau) for x in grid]
-									for k in range(count)]
+	                                    for k in range(count)]
 	
 	for k in range(5):
 		print("iter ", k)
 		print_vec(res[k])
 		print_vec(origin[k])
-	
-	print("SIGMA =", pde.a**2 * pde.tau / pde.h**2)
+
+	print("h =", pde.h)
+	sigma = pde.a**2 * pde.tau / pde.h**2
+	print("SIGMA =", round(sigma, 5))
+#	err1 = max([abs(u-v)/abs(v+0.0000001) for u,v in zip(res[-1], origin[-1])])
 	err1 = max([abs(u-v) for u,v in zip(res[-1], origin[-1])])
 	print("ERR_1 =", err1)
+#	err2 = (sum([(abs(u-v)/abs(v+0.0000001))**2 for u,v in zip(res[-1], origin[-1])]) / len(res[-1]))**0.5
 	err2 = (sum([abs(u-v)**2 for u,v in zip(res[-1], origin[-1])]) / len(res[-1]))**0.5
 	print("ERR_2 =", err2)
+	print("ITER =", int(pde.t/pde.tau + 0.00001))
 	
 	tmp = []
 	for us,vs in zip(res, origin):
+#		tmp.append( (sum([(abs(u-v+0.000001)/abs(v+0.00000001))**2 for u,v in zip(us, vs)]) / len(us))**0.5)
+#		tmp.append(max([abs(u-v)/abs(v+0.0000001) for u,v in zip(us,vs)]))
 		tmp.append(max([abs(u-v) for u,v in zip(us,vs)]))
+#		tmp.append( min([abs(v) for u,v in zip(us, vs)]))
 	
 	f = open("result", 'w')
 	f.write(str({'result':res, 'origin':origin, 'grid':grid, 'tmp' : tmp, 't' : pde.t, 'tau':pde.tau}))

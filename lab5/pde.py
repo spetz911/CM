@@ -177,12 +177,13 @@ class PDE:
 		b0 = 2*alpha / h
 		c0 = -alpha / (2*h)
 		d0 = phi0(t)
+
 		# here we swap c0 && b0 && a0, because it's first equation shr 1
 		return (c0, a0, b0, d0)
 
 	def last_eq_1lvl2p(self, t):
 		"""Find coefficients of first equation"""
-		alpha = self.right[0]
+		alpha = -self.right[0]
 		beta  = self.right[1]
 		phi1  = self.right[2]
 		h = self.h
@@ -193,23 +194,46 @@ class PDE:
 		dn = phi1(t)
 		# here we swap cn && bn && an, because it's first equation shl 1
 		return (bn, cn, an, dn)
+
+		
+		
 	
-	@staticmethod
-	def correct_eq(Eq):
+	def correct_eq(self, Eq):
 		#combine Eq[0] && Eq[1] for ci -> 0
 		if abs(Eq[1][2]) > 0.0001:
-			k0 = Eq[0][2] / Eq[1][2]
-			Eq[0] = [(u - k0*v) for u,v in zip(Eq[0], Eq[1])]
-#			print("correct =", Eq[0])
+			c0,a0,b0,d0 = Eq[0]
+			a1,b1,c1,d1 = Eq[1]
+			
+			k = c0 / c1
+			Eq[0] = (0.0, a0 - k*a1, b0 - k*b1, d0 - k*d1)
+			
+		#	print("correct_l =")
+		#	print(Eq[0])
+		#	print(Eq[1])
+		
 		#combine Eq[-1] && Eq[-2] for ai -> 0
-		if abs(Eq[-2][2]) < 0.0001:
-			kn = Eq[-1][2] / Eq[-2][2]
-			Eq[-1] = [(u - k0*v) for u,v in zip(Eq[-1], Eq[-2])]
+		if abs(Eq[-2][0]) > 0.0001:
+			bn,cn,an,dn = Eq[-1]
+			a1,b1,c1,d1 = Eq[-2]
+			
+			k = an / a1
+
+			Eq[-1] = [0.0] * 4
+			Eq[-1][0] = bn - k*b1
+			Eq[-1][1] = cn - k*c1
+			Eq[-1][2] = 0.0
+			Eq[-1][3] = dn - k*d1
+			
+		#	print("correct_r =")
+		#	print(Eq[-1])
+		#	print(Eq[-2])
+
+		
 
 # if __name__ == '__main__':
 #    pool = Pool(processes=4)              # start 4 worker processes
 #    result = pool.apply_async(f, [10])     # evaluate "f(10)" asynchronously
-#    print(result.get(timeout=1))           # prints "100" unless your computer is very slow
+#    print(result (timeout=1))           # prints "100" unless your computer is very slow
 #    print())          # prints "[0, 1, 4,..., 81]"
 
 
@@ -301,7 +325,7 @@ class PDE:
 	#	print(Eq[0], Eq[-1])
 		
 		if self.approximate_boundary == '1lvl2p':
-			PDE.correct_eq(Eq)
+			self.correct_eq(Eq)
 		
 		[M.a,M.b,M.c,M.d] = list(zip(* Eq))
 		M.n = N
@@ -342,7 +366,7 @@ class PDE:
 		Eq.append(self.last_eq(t))
 		
 		if self.approximate_boundary == '1lvl2p':
-			PDE.correct_eq(Eq)
+			self.correct_eq(Eq)
 
 		M = Tridiagonal_Matrix()
 		

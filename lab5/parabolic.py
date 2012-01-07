@@ -54,7 +54,7 @@ class Parabolic_PDE(PDE):
 	
 	def last_eq_2lvl(self, t):
 		"""Find coefficients of last equation"""
-		alpha = self.right[0]
+		alpha = -self.right[0]
 		beta  = self.right[1]
 		phi1  = self.right[2]
 		U = self.grid[-1]
