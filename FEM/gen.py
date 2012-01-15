@@ -202,9 +202,13 @@ def generate():
 	print ("test", num(0,0), num(1,0), num(0,1), num(2,1))
 
 	border.extend(field[0])
-	border.extend(field[-1])
-	border.extend(list(zip(*field))[0])
 	border.extend(list(zip(*field))[-1])
+	tmp = list(field[-1])
+	tmp.reverse()
+	border.extend(tmp)
+	tmp = list(list(zip(*field))[0])
+	tmp.reverse()
+	border.extend(tmp)
 	
 	points = [(0.0,0.0)] * (n*m + (n-1)*(m-1))
 	
@@ -233,9 +237,15 @@ def generate():
 	print(list(enumerate(points))[:9])
 	print(border)
 	#convert coord to index
-	border = {points.index(p) for p in border}
+	border = list({points.index(p) for p in border})
 	
-	return elems, border, points
+	border.append(border[0])
+	
+	lim_points = list(zip(border, border[1:]))
+#	lim_points += [(b,a) for a,b in lim_points]
+
+	
+	return elems, lim_points, points
 
 def main():
 	e, p, b = generate()
