@@ -49,18 +49,24 @@ def elem_fun(x,y, koef3, val3):
 	else:
 		return 0.0
 
+
+
 def test_answ(answ, elems, points):
 	funcs3 = []
 	values = []
+	u_k = []
 	for el in elems:
+		u_k.append([answ[x] for x in el])
 		values.append([points[x] for x in el])
-		koeffs = [elem_plane(i, values[-1]) for i in range(len(values[-1]))]
+		
+		koeffs = [[ answ[p]*x for x in elem_plane(i, values[-1])]
+		                      for i,p in enumerate(el)]
 		funcs3.append(koeffs)
 	
-	return lambda x,y: sum(u_k*elem_fun(x,y,koef, val) for u_k, koef, val in zip(answ, funcs3, values))
-	
-	
-	
+	return lambda x,y: sum(elem_fun(x,y, koef, val) for koef, val in zip(funcs3, values))
+
+
+
 
 def square(points):
 	p1, p2, p3 = points
@@ -95,7 +101,7 @@ def print_vec(row):
 	print("--------")
 
 alpha = 1
-phi = lambda x,y: 1.0
+phi = lambda x,y: x+y
 func_start = lambda x,y: 0.0
 
 
@@ -116,8 +122,78 @@ def elem_plane(i, points):
 	koef = m.solve(m.shift_b(b))
 #	koef2 = [round(xx, 2) for xx in koef]
 #	print("koef = ", koef2)
-	return koef
 
+#	if abs(k[0] + k[1]*points[i][0] + k[2]*points[i][1] - 1.0) > 0.001 : exit(0)
+
+	return koef # (1.0, koef[1]/koef[0], koef[2]/koef[0])
+
+
+def mke_solve(elems, lim_points, points):
+	global alpha
+	mat = matrix_2.Matrix(m = len(points), n = len(points))
+	mat = mat * 0
+	
+	vec = matrix_2.Matrix(m = len(points), n = 1)
+	vec = vec * 0
+
+	al =   [0.0]*len(points)
+	beta = [0.0]*len(points)
+	gama = [0.0]*len(points)
+	
+	for num,el in enumerate(elems):
+		print('matrix_el', el)
+		values = [points[x] for x in el]
+		el_square = square(values)
+		f_start = func_start(*median(*values)) * el_square / 3
+		
+		for i,e in enumerate(el):
+			plane = elem_plane(i, values)
+#			print(plane)
+			al[e] = plane[0]
+			beta[e] = plane[1]
+			gama[e] = plane[2]
+
+#		print('alph =', al)
+#		print('beta =', beta)
+#		print('gama =', gama)
+
+		for p1, p2 in dekart_product(el,el):
+			mat[p1][p2] += (beta[p1]*beta[p2] + gama[p1]*gama[p2]) * el_square
+			
+		border = [ x for x in dekart_product(el,el) if x in lim_points]
+		
+		print('border', border)
+		
+		if border:
+			i,k = border[0]
+			[j] = [x for x in el if x!=i and x!=k]
+			bord_dist = dist(points[i], points[k])
+			bord_fun = 0.5 * bord_dist * phi(*median(points[i], points[k]))
+			
+			mat[i][i] += 1.0 * bord_dist * alpha/3
+			mat[k][k] += 1.0 * bord_dist * alpha/3
+			mat[i][k] += 0.5 * bord_dist * alpha/3
+			mat[k][i] += 0.5 * bord_dist * alpha/3
+			
+			vec[i][0] += bord_fun
+			vec[k][0] += bord_fun
+			
+			print ('f_start =', bord_fun)
+	
+		else:
+			i,j,k = el
+			bord_dist = 0.0
+			bord_fun = 0.0
+			
+		vec[i][0] -= f_start
+		vec[j][0] -= f_start
+		vec[k][0] -= f_start
+		
+		
+
+	return mat, vec
+
+	
 
 
 def matrix_el(elem, lim_points, points):
@@ -126,15 +202,16 @@ def matrix_el(elem, lim_points, points):
 	res = matrix_2.Matrix(m = 3, n = 3)
 
 	values = [points[x] for x in elem]
-	print('values', values)
+#	print('values', values)
 	k3 = [elem_plane(i, values) for i in range(len(values))]
-	print('k3 =', k3)
+#	print('k3 =', k3)
 	beta = [ a[1] for a in k3]
 	gama = [ a[2] for a in k3]
 
 	# local matrix
 	res.M = [[(beta[m]*beta[n] + gama[m]*gama[n]) for n in [0,1,2]]
 	                                              for m in [0,1,2]]
+
 	el_square = square(values)
 	res = res * el_square
 
@@ -144,33 +221,41 @@ def matrix_el(elem, lim_points, points):
 #	print('dekart_product(elem,elem)', list(dekart_product(elem,elem)))
 #	print(lim_points)
 
-	mat = matrix_2.Matrix(m = 3, n = 3)
 	if border:
 		edge = border[0]
 #		print("border")
 		p1 = points[edge[0]]
 		p2 = points[edge[1]]
-		tmp_k = alpha/3 * dist(p1, p2)
-		mat.M = [[1.0, 0.0, 0.5],
-		         [0.0, 0.0, 0.0],
-		         [0.5, 0.0, 1.0]]
-		G = mat * tmp_k
-#		G.pr()
-		f_bord = 0.5 * dist(p1, p2) * phi(*median(p1, p2))
-
+		i = elem.index(edge[0])
+		k = elem.index(edge[1])
+		bord_dist = dist(p1, p2)
+		bord_fun = 0.5 * bord_dist * phi(*median(p1, p2))
 	else:
-#		print("area", elem)
-		mat.M = [[0.0]*3 for i in range(3)]
-		G = mat
-		f_bord = 0
-		
+		bord_dist = 0.0
+		bord_fun = 0.0
+		i = k = 0
+
+	mat = matrix_2.Matrix(m = 3, n = 3)
+	mat.M = [[0.0] * 3 for i in range(3)]
+	mat[i][i] = 1.0
+	mat[k][k] = 1.0
+	mat[i][k] = 0.5
+	mat[k][i] = 0.5
+
+	mat = mat * (alpha/3 * bord_dist)
+
 	vec = matrix_2.Matrix(m = 3, n = 1)
 	
 	f_start = func_start(*median(*values)) * el_square / 3
 	
-	vec.M[0][0] = f_bord - f_start
+	print ('f_start =', bord_fun)
+	
+	vec.M[0][0] = -f_start
 	vec.M[1][0] = -f_start
-	vec.M[2][0] = f_bord - f_start
+	vec.M[2][0] = -f_start
+	
+	vec.M[i][0] += bord_fun
+	vec.M[k][0] += bord_fun
 	
 	return (res + mat), vec
 
@@ -210,23 +295,43 @@ def asamble(elems, lim_points, points):
 
 elems, lim_points, points = generate()
 
-print('old', gen_lim_points())
+#points = [(0,0), (0,2), (1,1), (2,1)]
+# points = [(-1,-1), (0,0), (1,0), (0,1)]
+
+#elems = [(0,1,2), (1,2,3), (2,3,0)]
+#lim_points = [(0,1), (1,3), (3,0)]
+
+
+# print('old', gen_lim_points())
 print('new', lim_points)
+print('elems', elems)
+from pprint import pprint
+pprint(list(enumerate(points)))
 
 
-
-mat, vec = asamble(elems, lim_points, points)
+mat, vec = mke_solve(elems, lim_points, points)
+#mat, vec = asamble(elems, lim_points, points)
 
 mat.pr()
-vec.pr()
+vec.transponate().pr()
 
 
 mat.build_LU()
 
 print ("Solve:")
 answ = mat.solve(mat.shift_b(vec.transponate()[0]))
-answ = [round(xx, 2) for xx in answ]
+
+#print ("Test:")
+#vec2 = matrix_2.Matrix(m = vec.n, n = vec.m)
+#vec2.M[0] = answ
+#vec2  = vec2.transponate()
+#(mat*vec2).pr()
+
+answ = [round(xx, 5) for xx in answ]
 print("answ = ", answ)
+
+etalon = [round(phi(x,y), 2) for x,y in points]
+print("etalon = ", etalon)
 
 # answ = [1.0] *len(elems)
 # answ[1] = 1.0
@@ -235,8 +340,8 @@ print("answ = ", answ)
 
 
 Fun = test_answ(answ, elems, points)
-Mat = [[Fun(x,y) for y in frange(0.0, 1.0, 0.005)]
-                 for x in frange(0.0, 1.0, 0.005)]
+Mat = [[Fun(x,y) for y in frange(0.0, 1.0, 0.05)]
+                 for x in frange(0.0, 1.0, 0.05)]
 
 # print_mat(Mat)
 
@@ -244,6 +349,4 @@ f = open("result", 'w')
 f.write(str(Mat))
 f.write("\n")
 f.close()
-
-
 

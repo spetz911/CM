@@ -182,8 +182,8 @@ def generate():
 	
 	lx = 1.0
 	ly = 1.0
-	hx = 0.5
-	hy = 0.5
+	hx = 0.25
+	hy = 0.25
 	
 	field = None
 	
@@ -201,14 +201,23 @@ def generate():
 
 	print ("test", num(0,0), num(1,0), num(0,1), num(2,1))
 
-	border.extend(field[0])
-	border.extend(list(zip(*field))[-1])
-	tmp = list(field[-1])
-	tmp.reverse()
-	border.extend(tmp)
-	tmp = list(list(zip(*field))[0])
-	tmp.reverse()
-	border.extend(tmp)
+	for i in range(n):
+		border.append(field[0][i])
+	for i in range(m):
+		border.append(field[i][-1])
+	for i in range(n):
+		border.append(field[-1][n-1-i])
+	for i in range(m):
+		border.append(field[m-1-i][0])
+
+#	border.extend(field[0])
+#	border.extend(list(zip(*field))[0])
+#	tmp = list(field[-1])
+#	tmp.reverse()
+#	border.extend(tmp)
+#	tmp = list(list(zip(*field))[-1])
+#	tmp.reverse()
+#	border.extend(tmp)
 	
 	points = [(0.0,0.0)] * (n*m + (n-1)*(m-1))
 	
@@ -234,16 +243,21 @@ def generate():
 	
 	from pprint import pprint
 	pprint(field)
-	print(list(enumerate(points))[:9])
-	print(border)
+	print('points')
+	print(list(enumerate(points))[:8])
+	print('border')
+	pprint(list(enumerate(border)))
 	#convert coord to index
-	border = list({points.index(p) for p in border})
-	
+	border = [points.index(p) for p in border]
+
+
 	border.append(border[0])
 	
-	lim_points = list(zip(border, border[1:]))
+	lim_points = [(a,b) for a,b in zip(border, border[1:]) if a!=b]
 #	lim_points += [(b,a) for a,b in lim_points]
 
+	print('border2', border)
+	
 	
 	return elems, lim_points, points
 

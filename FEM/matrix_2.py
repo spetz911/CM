@@ -74,19 +74,19 @@ class Matrix:
 		M1 = self
 		if type(M2) in [int,float]:
 			res = Matrix("",M1.m, M1.n)
-			res.M = [ [(M2*xx) for xx in M1_i] for M1_i in M1]
+			res.M = [ [(M2*xx) for xx in M1_i] for M1_i in M1.M]
 			return res
 
 		res = Matrix(m = M1.m, n = M2.n)
 		res.M = [[ sum([ (M1[i][k] * M2[k][j])  for k in range(M1.n)])
-												for j in range(res.n)]
-												for i in range(res.m)]
+							for j in range(res.n)]
+							for i in range(res.m)]
 		return res
 
 	def transponate(self):
 		res = Matrix("", m = self.n, n = self.m)
 		res.M = [ [(self[j][i]) for j in range(res.n)]
-								for i in range(res.m)]
+					for i in range(res.m)]
 		return res
 
 	def pr(self):
