@@ -1,132 +1,164 @@
-#include <stdlib.h> // for exit(1)
+/**
+ * Solver for System of linear equations.
+ * 
+ * @author Oleg Baskakov
+ * 2012. Written by NatSys Lab. (info@natsys-lab.com).
+ */
+#ifndef __MATRIX_CC__
+#define __SLAE_CC__
+
+
+#include <iostream>
+#include <fstream>
+#include <vector>
 
 #include "vector.cc"
 
-using namespace std;
 
 
-class Matrix {
+
+class Matrix : public Vector<Vector<double> > {
 private:
-	Vector *data;
-	int n, m;
 public:
-	Matrix() : data(NULL), n(0) {}
-	Matrix(int size) : data(new Vector[size]), n(size) {}
-	Matrix(int _n, int _m) : data(new Vector[_n]), n(_n), m(_m)
+	Matrix()
+		:Vector<Vector<double> >() {}
+	Matrix(size_t n)
+		:Vector<Vector<double> >(n) {}
+	Matrix(size_t n, size_t m)
+		:Vector<Vector<double> >(n)
 	{
 		for (int i=0; i<n; ++i)
-			data[i] = *(new Vector(m));
+			(*this)[i] = *(new Vector<double> (m));
 	}
-	~Matrix()
+	inline
+	Matrix(Vector<Vector<double> > mat)
+		:Vector<Vector<double> >(mat) {}
+	
+	static Matrix &
+	identity(size_t n)
 	{
-		if (data) {
-			delete[] data;
-			data = NULL;
-			n = 0;
-			m = 0;
-		}
+		Matrix &mat = *(new Matrix(n, n));
+		for (int i=0; i<n; ++i)
+			mat[i][i] = 1.0;
+		return mat;
 	}
 	
-	int
+	Matrix(const Vector<double> &vec)
+		:Vector<Vector<double> >(vec.size())
+	{
+		for (int i=0; i<vec.size(); ++i) {
+			(*this)[i] = *(new Vector<double> (1));
+			(*this)[i][0] = vec[i];
+		}
+//		Matrix m(1);
+//		m[0] = vec;
+//		*this = transpose(m);
+	}
+
+	size_t inline
 	size_n() const
 	{
-		return n;
+		return size();
 	}
-	int
+	
+	size_t inline
 	size_m() const
 	{
-		return m;
+		if (empty())
+			return 0;
+		else
+			return (*this)[0].size();
 	}
 	
-	Vector &
-	resize(int _n, int _m)
+	void
+	resize(size_t n, size_t m)
 	{
-		n = _n;
-		m = _m;
-		if (data) delete[] data;
-		data = new Vector[_n];
-		
+		std::vector<Vector<double> >::resize(n);
 		for (int i=0; i<n; ++i)
-			data[i].resize(m);
-		return *this;
+			(*this)[i].resize(m);
 	}
 	
-	Vector &
-	operator[](int i)
+	void
+	swap_rows(int i, int j)
 	{
-		return data[i];
-	}
-	const Vector &
-	operator[](int i) const
-	{
-		return data[i];
-	}
-	
-	Matrix &
-	operator=(const Matrix &old)
-	{
-		n = old.size_n();
-		m = old.size_m();
-		resize(n, m);
-		
-		for (int i=0; i<n; ++i)
-			for (int j=0; j<m; ++j)
-				data[i][j] = old[i][j]; //FIXME operator= doesn't work
-		return *this;
-	}
-	
-	Matrix &
-	operator+(const Matrix &v2) const
-	{
-		Matrix *res = new Matrix(n, m);
-		for (int i=0; i<n; ++i)
-			for (int j=0; j<m; ++j)
-			(*res)[i][j] = data[i][j] + v2[i][j];
-		return *res;
+		std::swap((*this)[i], (*this)[j]);
 	}
 
-	Vector &
-	operator+=(const Matrix &v2) const
+	void
+	swap_cols(int i, int j)
 	{
-		for (int i=0; i<n; ++i)
-			data[i] += v2[i];
-		return *this;
-	}
-
-	Matrix &
-	operator*(double a) const
-	{
-		Matrix *res = new Matrix(n, m);
-		for (int i=0; i<n; ++i)
-			for (int j=0; j<m; ++j)
-				res[i][j] = data[i][j] * a;
-		return *res;
-	}
-
-	Vector &
-	operator*(const Vector &vec) const
-	{
-		Vector *res = new Vector(vec.size());
-		for (int i=0; i<n; ++i)
-			res[i] = data[i] * vec;
-		return *res;
+		for (int k=0; k < size(); ++k)
+			std::swap((*this)[k][i], (*this)[k][j]);
 	}
 	
 	void
 	operator*=(double a)
 	{
-		for (int i=0; i<n; ++i)
-			data[i] *= a;
-		return *this;
+		for (int i=0; i<size(); ++i)
+			(*this)[i] *= a;
 	}
 
-	double
-	operator*(const Matrix &mat2) const
+	Matrix &
+	operator*(double a) const
 	{
-		double res;
-		for (int i=0; i<n; ++i)
-			res += data[i] * mat2[i];
+		Matrix &res = *(new Matrix(size_n(), size_m()));
+		for (int i=0; i < size_n(); ++i)
+			for (int j=0; j < size_m(); ++j)
+				res[i][j] = (*this)[i][j] * a;
 		return res;
+	}
+
+	Vector<double>  &
+	operator*(const Vector<double> &vec) const
+	{
+		const Matrix &mat = *this;
+		Vector<double> &res = *(new Vector<double> (vec.size()));
+		for (int i=0; i < size_n(); ++i)
+			res[i] = mat[i] * vec;
+		return res;
+	}
+	
+	
+	Matrix &
+	operator*(const Matrix &mat0) const
+	{
+		const Matrix &mat1 = *this;
+		const Matrix &mat2 = transpose(mat0);
+		Matrix &res = *(new Matrix(mat1.size_n(), mat2.size_n()));
+		
+		for (int i=0; i < res.size_n(); ++i)
+			for (int j=0; i < res.size_m(); ++i)
+			res[i][j] = Vector<double>::dot(mat1[i], mat2[i]);
+		return res;
+	}
+
+	Matrix &
+	transpose()
+	{
+		Matrix &res = *this;
+		for (int i=0; i < res.size_n(); ++i)
+			for (int j=0; j < res.size_m(); ++j)
+				std::swap(res[i][j], res[j][i]);
+		return res;
+	}
+
+	static Matrix &
+	transpose(const Matrix &mat)
+	{
+		Matrix &res = *(new Matrix(mat.size_m(), mat.size_n()));
+		for (int i=0; i < res.size_n(); ++i)
+			for (int j=0; j < res.size_m(); ++j)
+				res[i][j] = mat[j][i];
+		return res;
+	}
+
+	std::string &
+	str()
+	{
+		std::string *res;
+		for (int i=0; i<size_n(); ++i)
+			*res += (*this)[i].str() + std::endl;
+		return *res;
 	}
 
 	friend std::ostream& operator<<(std::ostream& cout_, const Matrix& mat)
@@ -146,13 +178,15 @@ public:
 	{
 		int n, m;
 		cin_ >> n >> m;
-		mat.resize(n,m);
+		mat.resize(n, m);
 		
 		for (int i=0; i<n; ++i)
 			for (int j=0; j<m; ++j)
 				cin_ >> mat[i][j];
 		return cin_;
 	}
+
 };
+#endif // __MATRIX_CC__
 
 
